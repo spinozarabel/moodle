@@ -1,6 +1,6 @@
 <?php
 
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - http://moodle.org/ modified by Madhu A
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1501,4 +1501,124 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
     ));
     $event->add_record_snapshot('data', $data);
     $event->trigger();
+}
+/**
+ * Processes the CLbank and SLbank data in the subitted data based on leave data and type
+ *
+ * @param  stdClass $data           contains information of the complete data module instance
+ * @param  stdClass $datarecord     the submitted data, that goes into the table data_content
+ * @param  stdClass $user_profile_CL record from the table user_info_data pertaining to field CL
+ * @param  stdClass $user_profile_SL record from the table user_info_data pertaining to field SL
+ * @since  Moodle 3.3
+ */
+function adjust_new_leave($data, $datarecord) {
+    global $DB, $USER;
+	//
+	// Get user leave information from user_profile_fields
+	$user_profile_CL = $DB->get_record('user_info_data', array(
+			'userid'=>$USER->id,
+			'fieldid'=>'1'));  // adjust this for SriToni table
+		//
+	$user_profile_SL = $DB->get_record('user_info_data', array(
+			'userid'=>$USER->id,
+			'fieldid'=>'2')); // adjust this for SriToni Table
+	//
+	// Check if there are any leave records created by this user. If no then reset leave
+	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
+		$user_profile_CL->data = 4;  // reset the CL for the academic year, no prorating
+		$user_profile_SL->data = 5;  // reset the SL for the academic year, no prorating
+	}
+	//
+	// Get details from submitted form to process adjust the fields content based on form
+	//
+	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
+			// this will be a string like field_44 used as key for $datarecord
+	$field_SL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL"))->id;
+			//
+	$field_numlvdays = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Number of leave days"))->id;
+			//
+	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
+			//
+	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
+			// 
+	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+	//
+	// adjust CL and SL before leave to values obtained from user profile fields for CL and SL
+	$datarecord->$field_CL = $user_profile_CL->data;
+	$datarecord->$field_SL = $user_profile_SL->data;
+	// depending on leave type adjust the leave banks based on leave taken
+	switch ($datarecord->$field_lvtype) {
+		case "Sick leave" :
+					// the SL bank reduces and the CL bank stays the same. These are calculated fields
+			$datarecord->$field_SLbank = $user_profile_SL->data - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $user_profile_CL->data;
+			break;
+		case "Casual leave" :
+					// The CL bank reduces but the SL bank stays the same. These are calculated fields
+			$datarecord->$field_CLbank = $user_profile_CL->data - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $user_profile_SL->data;
+			}
+	// update the user profile fields with new values for CL and SL leave banks
+	$user_profile_CL->data = $datarecord->$field_CLbank;
+	$user_profile_SL->data = $datarecord->$field_SLbank;
+	$DB->update_record('user_info_data', $user_profile_CL, $bulk=false);
+	$DB->update_record('user_info_data', $user_profile_SL, $bulk=false);
+}
+/**
+ * Processes the CLbank and SLbank data in the subitted data based on leave data and type
+ *
+ * @param  stdClass $data           contains information of the complete data module instance
+ * @param  stdClass $datarecord     the submitted data, that goes into the table data_content
+ * @param  stdClass $record			Contains information of this record in table
+ * @since  Moodle 3.3
+ */
+function adjust_existing_leave($data, $datarecord,$record) {
+    global $DB;
+	// $data contains information of the complete data module instance
+	// $datarecord is the record that goes into the table data_content
+	// $user_profile_CL is an object that is a record from the table user_info_data
+	// $user_profile_SL is an object that is a record from the table user_info_data
+	//
+	// Get user leave information from user_profile_fields
+	$user_profile_CL = $DB->get_record('user_info_data', array(
+			'userid'=>$record->userid,	// get the id of the owner of the record and get her leave bank
+			'fieldid'=>'1'));  // adjust this for SriToni table
+	//
+	$user_profile_SL = $DB->get_record('user_info_data', array(
+			'userid'=>$record->userid,
+			'fieldid'=>'2')); // adjust this for SriToni Table
+	//
+	//
+	// get information from submitted data to adjust
+	//
+	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
+			// this will be a string like field_44
+	$field_SL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL"))->id;
+			//
+	$field_numlvdays = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Number of leave days"))->id;
+			//
+	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
+			//
+	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
+			// 
+	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+	//
+	// depending on leave type adjust the leave banks based on leave taken
+	switch ($datarecord->$field_lvtype) {
+		case "Sick leave" :
+					// the SL bank reduces and the CL bank stays the same. These are calculated fields
+			$datarecord->$field_SLbank = $datarecord->$field_SL - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $datarecord->$field_CL;
+			break;
+		case "Casual leave" :
+					// The CL bank reduces but the SL bank stays the same. These are calculated fields
+			$datarecord->$field_CLbank = $datarecord->$field_CL - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $datarecord->$field_SL;
+			}
+	// update the user profile fields with new values for CL and SL leave banks
+	$user_profile_CL->data = $datarecord->$field_CLbank;
+	$user_profile_SL->data = $datarecord->$field_SLbank;
+	//
+	$DB->update_record('user_info_data', $user_profile_CL, $bulk=false);
+	$DB->update_record('user_info_data', $user_profile_SL, $bulk=false);
 }
