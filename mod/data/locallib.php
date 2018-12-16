@@ -1578,7 +1578,7 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	// $datarecord is the record that goes into the table data_content
 	// $user_profile_CL is an object that is a record from the table user_info_data
 	// $user_profile_SL is an object that is a record from the table user_info_data
-	//
+	error_log(print_r($user,true));
 	// Get user leave information from user_profile_fields
 	$user_profile_CL = $DB->get_record('user_info_data', array(
 			'userid'=>$record->userid,	// get the id of the owner of the record and get her leave bank
