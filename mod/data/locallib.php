@@ -1542,6 +1542,8 @@ function adjust_new_leave($data, $datarecord) {
 	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
 			// 
 	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+			//
+	
 	//
 	// adjust CL and SL before leave to values obtained from user profile fields for CL and SL
 	$datarecord->$field_CL = $user_profile_CL->data;
@@ -1578,7 +1580,7 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	// $datarecord is the record that goes into the table data_content
 	// $user_profile_CL is an object that is a record from the table user_info_data
 	// $user_profile_SL is an object that is a record from the table user_info_data
-	error_log(print_r($user,true));
+	
 	// Get user leave information from user_profile_fields
 	$user_profile_CL = $DB->get_record('user_info_data', array(
 			'userid'=>$record->userid,	// get the id of the owner of the record and get her leave bank
@@ -1602,6 +1604,11 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
 			// 
 	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+	//
+	$field_employeeId = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "employeeId"))->id;
+	//
+	// fill in the employeeId in the record since we don't know if this was filled in or if so done correctly
+	$datarecord->$field_employeeId = $USER->idnumber;
 	//
 	// depending on leave type adjust the leave banks based on leave taken
 	switch ($datarecord->$field_lvtype) {
