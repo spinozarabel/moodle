@@ -1507,28 +1507,30 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
  *
  * @param  stdClass $data           contains information of the complete data module instance
  * @param  stdClass $datarecord     the submitted data, that goes into the table data_content
- * @param  stdClass $user_profile_CL record from the table user_info_data pertaining to field CL
- * @param  stdClass $user_profile_SL record from the table user_info_data pertaining to field SL
+ * @param  stdClass $user_profile_leave saves CL and SL in JSON string
  * @since  Moodle 3.3
  */
 function adjust_new_leave($data, $datarecord) {
     global $DB, $USER;
 	//
-	// Get user leave information from user_profile_fields
-	$user_profile_CL = $DB->get_record('user_info_data', array(
-			'userid'=>$USER->id,
-			'fieldid'=>'1'));  // adjust this for SriToni table
-		//
-	$user_profile_SL = $DB->get_record('user_info_data', array(
-			'userid'=>$USER->id,
-			'fieldid'=>'2')); // adjust this for SriToni Table
-	//
-	// Check if there are any leave records created by this user. If no then reset leave
+	// Check if there are any leave records created by this user. If not, reset leave
 	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
-		$user_profile_CL->data = 4;  // reset the CL for the academic year, no prorating
-		$user_profile_SL->data = 5;  // reset the SL for the academic year, no prorating
+    $leave_array = array(
+      "CL"  =>  4,
+      "SL"  =>  5,
+    );
+    $user_profile_leave->data = json_encode($leave_array); // reset
 	}
-	//
+  else {
+    // Get user leave information from user_profile_fields
+    $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  	$user_profile_leave = $DB->get_record('user_info_data', array(
+  			'userid'   =>  $USER->id,
+  			'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+    $leave_array  = json_decode(	$user_profile_leave->data);
+  	//
+  }
+	// So we have a $leave_array now that contains pre-leave values
 	// Get details from submitted form to process adjust the fields content based on form
 	//
 	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
@@ -1540,7 +1542,7 @@ function adjust_new_leave($data, $datarecord) {
 	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
 			//
 	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
-			// 
+			//
 	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
 			//
 	$field_employeeId = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "employeeId"))->id;
@@ -1548,26 +1550,32 @@ function adjust_new_leave($data, $datarecord) {
 	// fill in the employeeId in the record since we don't know if this was filled in or if so done correctly
 	$datarecord->$field_employeeId = $USER->idnumber;
 	//
-	// adjust CL and SL before leave to values obtained from user profile fields for CL and SL
-	$datarecord->$field_CL = $user_profile_CL->data;
-	$datarecord->$field_SL = $user_profile_SL->data;
+	// adjust CL and SL before leave to either reset values or current values in profile field
+	$datarecord->$field_CL = $leave_array["CL"];
+	$datarecord->$field_SL = $leave_array["SL"];
 	// depending on leave type adjust the leave banks based on leave taken
 	switch ($datarecord->$field_lvtype) {
 		case "Sick leave" :
 					// the SL bank reduces and the CL bank stays the same. These are calculated fields
-			$datarecord->$field_SLbank = $user_profile_SL->data - $datarecord->$field_numlvdays;
-			$datarecord->$field_CLbank = $user_profile_CL->data;
+			$datarecord->$field_SLbank = $leave_array["SL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $leave_array["CL"];
 			break;
 		case "Casual leave" :
 					// The CL bank reduces but the SL bank stays the same. These are calculated fields
-			$datarecord->$field_CLbank = $user_profile_CL->data - $datarecord->$field_numlvdays;
-			$datarecord->$field_SLbank = $user_profile_SL->data;
+			$datarecord->$field_CLbank = $leave_array["CL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $leave_array["SL"];
 			}
 	// update the user profile fields with new values for CL and SL leave banks
-	$user_profile_CL->data = $datarecord->$field_CLbank;
-	$user_profile_SL->data = $datarecord->$field_SLbank;
-	$DB->update_record('user_info_data', $user_profile_CL, $bulk=false);
-	$DB->update_record('user_info_data', $user_profile_SL, $bulk=false);
+  $CLbank = $datarecord->$field_CLbank;
+  $SLbank = $datarecord->$field_SLbank;
+  // construct new $leave_array to json_encode and store back
+  $leave_array = array(
+    "CL"  => $CLbank ,
+    "SL"  => $SLbank ,
+  );
+  // update  with latest leave banks json_encode
+	$user_profile_leave->data =  json_encode($leave_array);
+	$DB->update_record('user_info_data', $user_profile_leave, $bulk=false);
 }
 /**
  * Processes the CLbank and SLbank data in the subitted data based on leave data and type
@@ -1581,17 +1589,15 @@ function adjust_existing_leave($data, $datarecord,$record) {
     global $DB;
 	// $data contains information of the complete data module instance
 	// $datarecord is the record that goes into the table data_content
-	// $user_profile_CL is an object that is a record from the table user_info_data
-	// $user_profile_SL is an object that is a record from the table user_info_data
-	
-	// Get user leave information from user_profile_fields
-	$user_profile_CL = $DB->get_record('user_info_data', array(
-			'userid'=>$record->userid,	// get the id of the owner of the record and get her leave bank
-			'fieldid'=>'1'));  // adjust this for SriToni table
+	// $user_profile_leave is an object that is a record from the table user_info_data
 	//
-	$user_profile_SL = $DB->get_record('user_info_data', array(
-			'userid'=>$record->userid,
-			'fieldid'=>'2')); // adjust this for SriToni Table
+  // Get user leave information from user_profile_fields
+  $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  $user_profile_leave = $DB->get_record('user_info_data', array(
+      'userid'   =>  $USER->id,
+      'fieldid'  =>  $field->id));  // Get fieldid based on shortname "leave"
+  $leave_array  = json_decode(	$user_profile_leave->data);
+  // Get user leave information from user_profile_fields
 	//
 	//
 	// get information from submitted data to adjust
@@ -1605,7 +1611,7 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
 			//
 	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
-			// 
+			//
 	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
 	//
 	//
@@ -1613,18 +1619,24 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	switch ($datarecord->$field_lvtype) {
 		case "Sick leave" :
 					// the SL bank reduces and the CL bank stays the same. These are calculated fields
-			$datarecord->$field_SLbank = $datarecord->$field_SL - $datarecord->$field_numlvdays;
-			$datarecord->$field_CLbank = $datarecord->$field_CL;
+			$datarecord->$field_SLbank = $leave_array["SL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $leave_array["CL"];
 			break;
 		case "Casual leave" :
 					// The CL bank reduces but the SL bank stays the same. These are calculated fields
-			$datarecord->$field_CLbank = $datarecord->$field_CL - $datarecord->$field_numlvdays;
-			$datarecord->$field_SLbank = $datarecord->$field_SL;
+			$datarecord->$field_CLbank = $leave_array["CL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $leave_array["SL"];
 			}
-	// update the user profile fields with new values for CL and SL leave banks
-	$user_profile_CL->data = $datarecord->$field_CLbank;
-	$user_profile_SL->data = $datarecord->$field_SLbank;
-	//
-	$DB->update_record('user_info_data', $user_profile_CL, $bulk=false);
-	$DB->update_record('user_info_data', $user_profile_SL, $bulk=false);
+  //
+  // Bank values stored in variables after leave adjustments
+  $CLbank = $datarecord->$field_CLbank;
+  $SLbank = $datarecord->$field_SLbank;
+  // construct new $leave_array to json_encode and update user_profile_field
+  $leave_array = array(
+    "CL"  => $CLbank ,
+    "SL"  => $SLbank ,
+  );
+  // update  with latest leave banks json_encode
+	$user_profile_leave->data =  json_encode($leave_array);
+	$DB->update_record('user_info_data', $user_profile_leave, $bulk=false);
 }
