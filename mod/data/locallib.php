@@ -1513,16 +1513,16 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
 function adjust_new_leave($data, $datarecord) {
     global $DB, $USER;
 	//
-  // Get user leave information from user_profile_fields
-  $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
-  $user_profile_leave = $DB->get_record('user_info_data', array(
-      'userid'   =>  $USER->id,
-      'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
-  if ($leave_array) {
+    // Get user leave information from user_profile_fields
+	$field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+	$user_profile_leave = $DB->get_record('user_info_data', array(
+		  'userid'   =>  $USER->id,
+		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+	// assumes that there is some JSON default string to decode. Ensure defaults at least or this will give an error for blank
 	$leave_array  = json_decode(	$user_profile_leave->data, true );
-  }
-  // In above, Using true decodes into array and not stdObject
-  //
+ 
+    // In above, Using true decodes into array and not stdObject
+    //
 	// Check if there are any leave records created by this user. If not, reset leave
 	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
     $leave_array = array(
