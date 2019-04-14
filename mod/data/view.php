@@ -409,7 +409,7 @@ if ($showactivity) {
         $requiredentries_allowed = true;
         if ($data->entrieslefttoview = data_get_entries_left_to_view($data, $numentries, $canmanageentries)) {
             $strentrieslefttoaddtoview = get_string('entrieslefttoaddtoview', 'data', $data);
-            echo $OUTPUT->notification($strentrieslefttoaddtoview);
+// MA            echo $OUTPUT->notification($strentrieslefttoaddtoview);
             $requiredentries_allowed = false;
         }
 
