@@ -1513,6 +1513,13 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
 function adjust_new_leave($data, $datarecord) {
     global $DB, $USER;
 	//
+  // Get user leave information from user_profile_fields
+  $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  $user_profile_leave = $DB->get_record('user_info_data', array(
+      'userid'   =>  $USER->id,
+      'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+  $leave_array  = json_decode(	$user_profile_leave->data);
+  // 
 	// Check if there are any leave records created by this user. If not, reset leave
 	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
     $leave_array = array(
@@ -1521,15 +1528,6 @@ function adjust_new_leave($data, $datarecord) {
     );
     $user_profile_leave->data = json_encode($leave_array); // reset
 	}
-  else {
-    // Get user leave information from user_profile_fields
-    $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
-  	$user_profile_leave = $DB->get_record('user_info_data', array(
-  			'userid'   =>  $USER->id,
-  			'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
-    $leave_array  = json_decode(	$user_profile_leave->data);
-  	//
-  }
 	// So we have a $leave_array now that contains pre-leave values
 	// Get details from submitted form to process adjust the fields content based on form
 	//
