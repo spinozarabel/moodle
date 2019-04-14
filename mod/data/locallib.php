@@ -1585,7 +1585,7 @@ function adjust_new_leave($data, $datarecord) {
  * @since  Moodle 3.3
  */
 function adjust_existing_leave($data, $datarecord,$record) {
-    global $DB;
+    global $DB, $USER;
 	// $data contains information of the complete data module instance
 	// $datarecord is the record that goes into the table data_content
 	// $user_profile_leave is an object that is a record from the table user_info_data
