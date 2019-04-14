@@ -1518,8 +1518,9 @@ function adjust_new_leave($data, $datarecord) {
   $user_profile_leave = $DB->get_record('user_info_data', array(
       'userid'   =>  $USER->id,
       'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
-  $leave_array  = json_decode(	$user_profile_leave->data);
-  // 
+  $leave_array  = json_decode(	$user_profile_leave->data, true );
+  // In above, Using true decodes into array and not stdObject
+  //
 	// Check if there are any leave records created by this user. If not, reset leave
 	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
     $leave_array = array(
@@ -1594,7 +1595,7 @@ function adjust_existing_leave($data, $datarecord,$record) {
   $user_profile_leave = $DB->get_record('user_info_data', array(
       'userid'   =>  $USER->id,
       'fieldid'  =>  $field->id));  // Get fieldid based on shortname "leave"
-  $leave_array  = json_decode(	$user_profile_leave->data);
+  $leave_array  = json_decode(	$user_profile_leave->data, true );
   // Get user leave information from user_profile_fields
 	//
 	//
