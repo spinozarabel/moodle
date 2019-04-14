@@ -1618,12 +1618,12 @@ function adjust_existing_leave($data, $datarecord,$record) {
 	switch ($datarecord->$field_lvtype) {
 		case "Sick leave" :
 					// the SL bank reduces and the CL bank stays the same. These are calculated fields
-			$datarecord->$field_SLbank = $datarecord->$field_SLbank - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $datarecord->$field_SL - $datarecord->$field_numlvdays;
 			// no change to the $datarecord->$field_CLbank
 			break;
 		case "Casual leave" :
 					// The CL bank reduces but the SL bank stays the same. These are calculated fields
-			$datarecord->$field_CLbank = $datarecord->$field_CLbank - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $datarecord->$field_CL - $datarecord->$field_numlvdays;
 			// no change to $datarecord->$field_SLbank
 			}
   //
