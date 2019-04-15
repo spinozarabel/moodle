@@ -1,3 +1,7 @@
+Modofied mod/data on branch mymoodle_36.
+If the name of the database activity contains "leave management system" 
+the submitted record form data is further processed using added functions
+in the locallib.php using data from a specific user profiel field.
                                  .-..-.
    _____                         | || |
   /____/-.---_  .---.  .---.  .-.| || | .---.
