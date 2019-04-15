@@ -1511,28 +1511,37 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
  * @since  Moodle 3.3
  */
 function adjust_new_leave($data, $datarecord) {
-    global $DB, $USER;
-	//
-    // Get user leave information from user_profile_fields
-	$field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
-	$user_profile_leave = $DB->get_record('user_info_data', array(
-		  'userid'   =>  $USER->id,
-		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
-	// assumes that there is some JSON default string to decode. Ensure defaults at least or this will give an error for blank
-	$leave_array  = json_decode(	$user_profile_leave->data, true );
- 
-    // In above, Using true decodes into array and not stdObject
-    //
-	// Check if there are any leave records created by this user. If not, reset leave
+  global $DB, $USER;
+  //
+  // Check if there are any leave records created by this user
 	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
-    $leave_array = array(
-      "CL"  =>  4,
-      "SL"  =>  5,
-    );
-    $user_profile_leave->data = json_encode($leave_array); // reset
-	}
+    // no records exist for this user
+    // Get user leave information from user_profile_fields
+  	$field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  	$user_profile_leave = $DB->get_record('user_info_data', array(
+  		  'userid'   =>  $USER->id,
+  		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+    // the object above is only needed for its handle to update later on.
+    // no data is derived form it as it maybe unset or invalid data
+    // for beginning of year
+    //
+    // reset leave for new user in this LMS
+    $leave_array = array
+        (
+          "CL"  =>  4,
+          "SL"  =>  5,
+        );
+  }
+  else {
+    // records exist for this user, so profile_field will have valid json
+    $user_profile_leave = $DB->get_record('user_info_data', array(
+  		  'userid'   =>  $USER->id,
+  		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+    $leave_array  = json_decode(	$user_profile_leave->data, true );
+  }
+  // at this point we have a valid $leave_array to process
 	// So we have a $leave_array now that contains pre-leave values
-	// Get details from submitted form to process adjust the fields content based on form
+	// Get details from submitted form to process the fields content based on form
 	//
 	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
 			// this will be a string like field_44 used as key for $datarecord
@@ -1552,6 +1561,7 @@ function adjust_new_leave($data, $datarecord) {
 	$datarecord->$field_employeeId = $USER->idnumber;
 	//
 	// adjust CL and SL before leave to either reset values or current values in profile field
+  // these are contained in the $leave_array now
 	$datarecord->$field_CL = $leave_array["CL"];
 	$datarecord->$field_SL = $leave_array["SL"];
 	// depending on leave type adjust the leave banks based on leave taken
@@ -1567,6 +1577,7 @@ function adjust_new_leave($data, $datarecord) {
 			$datarecord->$field_SLbank = $leave_array["SL"];
 			}
 	// update the user profile fields with new values for CL and SL leave banks
+  // below are temporary variables used to build the array needed for json_encode
   $CLbank = $datarecord->$field_CLbank;
   $SLbank = $datarecord->$field_SLbank;
   // construct new $leave_array to json_encode and store back
