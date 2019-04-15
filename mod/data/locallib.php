@@ -1534,6 +1534,7 @@ function adjust_new_leave($data, $datarecord) {
   }
   else {
     // records exist for this user, so profile_field will have valid json
+    $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
     $user_profile_leave = $DB->get_record('user_info_data', array(
   		  'userid'   =>  $USER->id,
   		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
