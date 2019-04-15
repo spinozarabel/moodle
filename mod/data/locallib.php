@@ -1514,7 +1514,12 @@ function adjust_new_leave($data, $datarecord) {
   global $DB, $USER;
   //
   // Check if there are any leave records created by this user
-	if ($DB->record_exists('data_records', array('dataid'=>$data->id)) == false) {
+	if ( $DB->record_exists('data_records', array(
+                                            'dataid'=>$data->id,
+                                            'userid'   =>  $USER->id,
+                                              )
+                        ) ==  false )
+    {
     // no records exist for this user
     // Get user leave information from user_profile_fields
   	$field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
