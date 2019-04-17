@@ -142,10 +142,11 @@ class grade_export_id extends grade_export {
 		$column->name = $grade_item->get_idnumber();
 
         // We can't have feedback and display type at the same time.
-        $column->extra = ($feedback) ? get_string('feedback') : get_string($gradedisplayname, 'grades');
+        //$column->extra = ($feedback) ? get_string('feedback') : get_string($gradedisplayname, 'grades');
+		$column->extra = ($feedback) ? get_string('feedback') : "" ;
 
         //return html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
-		return $column;
+		return $column->name . $column->extra;
     }
 }
 
