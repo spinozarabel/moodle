@@ -121,6 +121,31 @@ class grade_export_id extends grade_export {
         $csvexport->download_file();
         exit;
     }
+	
+	/**
+	 * This was only defined in parent for all other exports but for id it is overridden by child here
+     * Returns the name of column in export
+     * @param object $grade_item
+     * @param boolean $feedback feedback colum
+     * @param string $gradedisplayname grade display name.
+     * @return string
+     */
+    public function format_column_name($grade_item, $feedback=false, $gradedisplayname = null) {
+        $column = new stdClass();
+
+        /*if ($grade_item->itemtype == 'mod') {
+            $column->name = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
+        } else {
+            $column->name = $grade_item->get_name(true);
+        }
+		*/
+		$column->name = $grade_item->get_idnumber();
+
+        // We can't have feedback and display type at the same time.
+        $column->extra = ($feedback) ? get_string('feedback') : get_string($gradedisplayname, 'grades');
+
+        return html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+    }
 }
 
 
