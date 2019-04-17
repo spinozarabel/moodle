@@ -17,19 +17,19 @@
 /**
  * Grade export event.
  *
- * @package    gradeexport_txt
+ * @package    gradeexport_id
  * @copyright  2016 Zane Karl <zkarl@oid.ucla.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace gradeexport_txt\event;
+namespace gradeexport_id\event;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
  * Grade export event class.
  *
- * @package    gradeexport_txt
+ * @package    gradeexport_id
  * @since      Moodle 3.2
  * @copyright  2016 Zane Karl <zkarl@oid.ucla.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
