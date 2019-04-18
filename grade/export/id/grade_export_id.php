@@ -134,14 +134,14 @@ class grade_export_id extends grade_export {
         $column = new stdClass();
 
         if ($grade_item->itemtype == 'mod') {
-            $column->name = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
+            $column->name = $grade_item->get_idnumber();
         } else {
             $column->name = $grade_item->get_name(true);
         }
 
         // We can't have feedback and display type at the same time.
         //$column->extra = ($feedback) ? get_string('feedback') : get_string($gradedisplayname, 'grades');
-		$column->extra = ($feedback) ? get_string('feedback') : $grade_item->get_idnumber();
+		$column->extra = ($feedback) ? get_string('feedback') : "";
 
         //return html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
 		return $column->name . $column->extra;
