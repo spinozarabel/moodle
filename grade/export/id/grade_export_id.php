@@ -133,13 +133,11 @@ class grade_export_id extends grade_export {
     public function format_column_name($grade_item, $feedback=false, $gradedisplayname = null) {
         $column = new stdClass();
 
-        /*if ($grade_item->itemtype == 'mod') {
-            $column->name = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
+        if ($grade_item->itemtype == 'mod') {
+            $column->name = $grade_item->get_idnumber();
         } else {
             $column->name = $grade_item->get_name(true);
         }
-		*/
-		$column->name = $grade_item->get_name() . ":" . $grade_item->get_idnumber();
 
         // We can't have feedback and display type at the same time.
         //$column->extra = ($feedback) ? get_string('feedback') : get_string($gradedisplayname, 'grades');
