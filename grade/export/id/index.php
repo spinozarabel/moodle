@@ -42,11 +42,11 @@ if (!empty($CFG->gradepublishing)) {
 
 $actionurl = new moodle_url('/grade/export/id/export.php');
 $formoptions = array(
-	'idnumberrequired' => true,  // MA to eliminate selection of category totals
+	//'idnumberrequired' => true,  // MA to eliminate selection of category totals
     'includeseparator'=>true,
     'publishing' => true,
     'simpleui' => true,
-    'multipledisplaytypes' => false // MA to select REAL grades only
+    'multipledisplaytypes' => true
 );
 
 $mform = new grade_export_form($actionurl, $formoptions);
