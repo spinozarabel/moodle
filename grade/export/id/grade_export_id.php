@@ -134,7 +134,7 @@ class grade_export_id extends grade_export {
         $column = new stdClass();
 
         if ($grade_item->itemtype == 'mod') {
-            get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
+            $column->name = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
         } else {
             $column->name = $grade_item->get_name(true);
         }
