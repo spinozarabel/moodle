@@ -402,14 +402,14 @@ if ($showactivity) {
     /// Check the number of entries required against the number of entries already made (doesn't apply to teachers)
         if ($data->entriesleft = data_get_entries_left_to_add($data, $numentries, $canmanageentries)) {
             $strentrieslefttoadd = get_string('entrieslefttoadd', 'data', $data);
-            echo $OUTPUT->notification($strentrieslefttoadd);
+//MA            echo $OUTPUT->notification($strentrieslefttoadd);
         }
 
     /// Check the number of entries required before to view other participant's entries against the number of entries already made (doesn't apply to teachers)
         $requiredentries_allowed = true;
         if ($data->entrieslefttoview = data_get_entries_left_to_view($data, $numentries, $canmanageentries)) {
             $strentrieslefttoaddtoview = get_string('entrieslefttoaddtoview', 'data', $data);
-            echo $OUTPUT->notification($strentrieslefttoaddtoview);
+// MA            echo $OUTPUT->notification($strentrieslefttoaddtoview);
             $requiredentries_allowed = false;
         }
 
@@ -512,19 +512,19 @@ if ($showactivity) {
                         'type' => 'button',
                         'id' => 'checkall',
                         'value' => get_string('selectall'),
-                        'class' => 'btn btn-secondary mr-1'
+                        'class' => 'btn btn-secondary m-r-1'
                     ));
                 echo html_writer::empty_tag('input', array(
                         'type' => 'button',
                         'id' => 'checknone',
                         'value' => get_string('deselectall'),
-                        'class' => 'btn btn-secondary mr-1'
+                        'class' => 'btn btn-secondary m-r-1'
                     ));
                 echo html_writer::empty_tag('input', array(
                         'class' => 'form-submit',
                         'type' => 'submit',
                         'value' => get_string('deleteselected'),
-                        'class' => 'btn btn-secondary mr-1'
+                        'class' => 'btn btn-secondary m-r-1'
                     ));
 
                 $module = array('name' => 'mod_data', 'fullpath' => '/mod/data/module.js');
