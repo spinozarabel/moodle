@@ -1,0 +1,10 @@
+The SriToni Moodle package customizes moodle database activity by the folliwng ways:
+
+1. mod/data/view.php 		Customized to not show messages due to number of records, max records needed, etc.
+2. mod/data/edit.php		customized: Added calls to custom functions for leave management
+3. mod/data/locallib.php	customized: Added custom functions to this library file for leave management
+
+SriToni Moodle package also adds a new export option in the grades as follows:
+
+1. grades/export/id			A new sub-directory is added to grades/export. This is a copy of the txt plugin
+							with suitable changes to name. basically the exported ietm name is replaced by the gradeitem number.
