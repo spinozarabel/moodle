@@ -668,6 +668,7 @@ class mod_forum_external_testcase extends externallib_advanced_testcase {
             'hasparent' => true,
             'timecreated' => $discussion1reply2->created,
             'subject' => $discussion1reply2->subject,
+            'replysubject' => get_string('re', 'mod_forum') . " {$discussion1reply2->subject}",
             'message' => file_rewrite_pluginfile_urls($discussion1reply2->message, 'pluginfile.php',
                     $forum1context->id, 'mod_forum', 'post', $discussion1reply2->id),
             'messageformat' => 1,   // This value is usually changed by external_format_text() function.
@@ -692,7 +693,8 @@ class mod_forum_external_testcase extends externallib_advanced_testcase {
                 'reply' => 1,
                 'export' => 0,
                 'controlreadstatus' => 0,
-                'canreplyprivately' => 0
+                'canreplyprivately' => 0,
+                'selfenrol' => 0
             ],
             'urls' => [
                 'view' => $urlfactory->get_view_post_url_from_post_id($discussion1reply2->discussion, $discussion1reply2->id),
@@ -721,6 +723,7 @@ class mod_forum_external_testcase extends externallib_advanced_testcase {
             'hasparent' => true,
             'timecreated' => $discussion1reply1->created,
             'subject' => $discussion1reply1->subject,
+            'replysubject' => get_string('re', 'mod_forum') . " {$discussion1reply1->subject}",
             'message' => file_rewrite_pluginfile_urls($discussion1reply1->message, 'pluginfile.php',
                     $forum1context->id, 'mod_forum', 'post', $discussion1reply1->id),
             'messageformat' => 1,   // This value is usually changed by external_format_text() function.
@@ -745,7 +748,8 @@ class mod_forum_external_testcase extends externallib_advanced_testcase {
                 'reply' => 1,
                 'export' => 0,
                 'controlreadstatus' => 0,
-                'canreplyprivately' => 0
+                'canreplyprivately' => 0,
+                'selfenrol' => 0
             ],
             'urls' => [
                 'view' => $urlfactory->get_view_post_url_from_post_id($discussion1reply1->discussion, $discussion1reply1->id),
