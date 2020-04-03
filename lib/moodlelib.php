@@ -3520,11 +3520,12 @@ function ismoving($courseid) {
  * Returns a persons full name
  *
  * Given an object containing all of the users name values, this function returns a string with the full name of the person.
- * The result may depend on system settings or language.  'override' will force both names to be used even if system settings
- * specify one.
+ * The result may depend on system settings or language. 'override' will force the alternativefullnameformat to be used. In
+ * English, fullname as well as alternativefullnameformat is set to 'firstname lastname' by default. But you could have
+ * fullname set to 'firstname lastname' and alternativefullnameformat set to 'firstname middlename alternatename lastname'.
  *
  * @param stdClass $user A {@link $USER} object to get full name of.
- * @param bool $override If true then the name will be firstname followed by lastname rather than adhering to fullnamedisplay.
+ * @param bool $override If true then the alternativefullnameformat format rather than fullnamedisplay format will be used.
  * @return string
  */
 function fullname($user, $override=false) {
@@ -4877,11 +4878,15 @@ function get_complete_user_data($field, $value, $mnethostid = null, $throwexcept
     // Build the WHERE clause for an SQL query.
     $params = array('fieldval' => $value);
 
-    // Do a case-insensitive query, if necessary.
+    // Do a case-insensitive query, if necessary. These are generally very expensive. The performance can be improved on some DBs
+    // such as MySQL by pre-filtering users with accent-insensitive subselect.
     if (in_array($field, $caseinsensitivefields)) {
         $fieldselect = $DB->sql_equal($field, ':fieldval', false);
+        $idsubselect = $DB->sql_equal($field, ':fieldval2', false, false);
+        $params['fieldval2'] = $value;
     } else {
         $fieldselect = "$field = :fieldval";
+        $idsubselect = '';
     }
     $constraints = "$fieldselect AND deleted <> 1";
 
@@ -4896,6 +4901,10 @@ function get_complete_user_data($field, $value, $mnethostid = null, $throwexcept
     if (!empty($mnethostid)) {
         $params['mnethostid'] = $mnethostid;
         $constraints .= " AND mnethostid = :mnethostid";
+    }
+
+    if ($idsubselect) {
+        $constraints .= " AND id IN (SELECT id FROM {user} WHERE {$idsubselect})";
     }
 
     // Get all the basic user data.
