@@ -45,7 +45,7 @@ class core_renderer extends \core_renderer {
         return $this->render_single_button($button);
     }
 	
-	protected function render_custom_menu(custom_menu $menu) {
+	protected function render_custom_menu(\custom_menu $menu) {
         // Our code will go here shortly
 		$mycourses = $this->page->navigation->get('mycourses');
  
