@@ -43,15 +43,9 @@ class core_renderer extends \core_renderer {
         return $this->render_single_button($button);
     }
 	
-// customization added my Madhu from here on
-	
 /**
- * over ride function in parent to render custom menu
- *
- * @menu 
- * @copyright  Madhu Avasarala
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */		
+	
+	
 	protected function render_custom_menu(\custom_menu $menu) {
 		// what we are doing is getting the mycourses branch from the navigation
 		$mycourses = $this->page->navigation->get('mycourses');
@@ -76,5 +70,6 @@ class core_renderer extends \core_renderer {
  
 		return parent::render_custom_menu($menu);
     }
+*/
 
 }
