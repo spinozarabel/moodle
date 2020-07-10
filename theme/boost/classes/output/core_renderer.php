@@ -45,19 +45,33 @@ class core_renderer extends \core_renderer {
         return $this->render_single_button($button);
     }
 	
+// customization added my Madhu from here on
+	
+/**
+ * over ride function in parent to render custom menu
+ *
+ * @menu 
+ * @copyright  Madhu Avasarala
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */		
 	protected function render_custom_menu(\custom_menu $menu) {
-        // Our code will go here shortly
+		// what we are doing is getting the mycourses branch from the navigation
 		$mycourses = $this->page->navigation->get('mycourses');
  
+		// user is logged in, mycourses object exists and has children
 		if (isloggedin() && $mycourses && $mycourses->has_children()) {
+			// Menu heading
 			$branchlabel = get_string('mycourses');
 			$branchurl   = new moodle_url('/course/index.php');
 			$branchtitle = $branchlabel;
 			$branchsort  = 10000;
-		 
+			// add the mycourses as new menu header
 			$branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
 		 
 			foreach ($mycourses->children as $coursenode) {
+				// A label $coursenode->get_content() returns us the text in the navigation node
+				// A url $coursenode->action which is the URL for the node.
+				// A title $coursenode->get_title().
 				$branch->add($coursenode->get_content(), $coursenode->action, $coursenode->get_title());
 			}
 		}
