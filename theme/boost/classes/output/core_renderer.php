@@ -18,9 +18,6 @@ namespace theme_boost\output;
 
 use moodle_url;
 
-// added for using filtering of theme
-use filter_manager;
-
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -44,22 +41,39 @@ class core_renderer extends \core_renderer {
         $button = new \single_button($url, $editstring, 'post', ['class' => 'btn btn-primary']);
         return $this->render_single_button($button);
     }
-	
+
 // customization added my Madhu from here on
-	
+
 /**
  * over ride function in parent to render custom menu
  *
- * @menu 
+ * @menu
  * @copyright  Madhu Avasarala
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */		
-	protected function render_custom_menu(\custom_menu $menu) {
-		// what we are doing is getting the mycourses branch from the navigation
-		$mycourses = $this->page->navigation->get('mycourses');
- 
-		// user is logged in, mycourses object exists and has children
-		if (isloggedin() && $mycourses && $mycourses->has_children()) {
+ */
+	protected function render_custom_menu(\custom_menu $menu)
+    {
+        global $CFG;
+        require_once($CFG->dirroot.'/course/lib.php');
+
+        if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
+        {
+            $branchlabel = get_string('mycourses') ;
+            $branchurl   = new moodle_url('/course/index.php');
+            $branchtitle = $branchlabel;
+            $branchsort  = 10000 ; // lower numbers = higher priority e.g. move this item to the left on the Custom Menu
+            $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+
+            foreach ($mycourses as $mycourse)
+            {
+                $branch->add($mycourse->shortname, new moodle_url('/course/view.php', array('id' => $mycourse->id)), $mycourse->fullname);
+            }
+        }
+
+
+		/* user is logged in, mycourses object exists and has children
+		if (isloggedin() && $mycourses && $mycourses->has_children())
+        {
 			// Menu heading
 			$branchlabel = get_string('mycourses');
 			$branchurl   = new moodle_url('/course/index.php');
@@ -67,15 +81,17 @@ class core_renderer extends \core_renderer {
 			$branchsort  = 10000;
 			// add the mycourses as new menu header
 			$branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
-		 
-			foreach ($mycourses->children as $coursenode) {
+
+			foreach ($mycourses->children as $coursenode)
+            {
 				// A label $coursenode->get_content() returns us the text in the navigation node
 				// A url $coursenode->action which is the URL for the node.
 				// A title $coursenode->get_title().
 				$branch->add($coursenode->get_content(), $coursenode->action, $coursenode->get_title());
 			}
 		}
- 
+        */
+
 		return parent::render_custom_menu($menu);
     }
 
