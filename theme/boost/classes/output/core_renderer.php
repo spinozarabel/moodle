@@ -53,7 +53,7 @@ class core_renderer extends \core_renderer {
  */
 	protected function render_custom_menu(\custom_menu $menu)
     {
-        global $CFG, $PAGE, $COURSE, $OUTPUT;
+        global $CFG, $PAGE, $COURSE, $DB;
         require_once($CFG->dirroot.'/course/lib.php');
         // mycourses menu on all pages
         if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
