@@ -55,7 +55,7 @@ class core_renderer extends \core_renderer {
     {
         global $CFG;
         require_once($CFG->dirroot.'/course/lib.php');
-
+        // mycourses menu on all pages
         if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
         {
             $branchlabel = get_string('mycourses') ;
@@ -69,29 +69,19 @@ class core_renderer extends \core_renderer {
                 $branch->add($mycourse->shortname, new moodle_url('/course/view.php', array('id' => $mycourse->id)), $mycourse->fullname);
             }
         }
-
-
-		/* user is logged in, mycourses object exists and has children
-		if (isloggedin() && $mycourses && $mycourses->has_children())
+        // admin menu
+        if (isloggedin() && is_siteadmin())
         {
-			// Menu heading
-			$branchlabel = get_string('mycourses');
-			$branchurl   = new moodle_url('/course/index.php');
-			$branchtitle = $branchlabel;
-			$branchsort  = 10000;
-			// add the mycourses as new menu header
-			$branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
-
-			foreach ($mycourses->children as $coursenode)
-            {
-				// A label $coursenode->get_content() returns us the text in the navigation node
-				// A url $coursenode->action which is the URL for the node.
-				// A title $coursenode->get_title().
-				$branch->add($coursenode->get_content(), $coursenode->action, $coursenode->get_title());
-			}
-		}
-        */
-
+            $branchlabel = "Admin";
+            $branchurl   = new moodle_url('/admin/search.php');
+            $branchtitle = $branchlabel;
+            $branchsort  = 11000 ;
+            $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+            $branch->add('Maintanance', new moodle_url('/admin/settings.php?section=maintenancemode'), 'Maintanance');
+            $branch->add('Cohorts', new moodle_url('/cohort/index.php'), 'Cohorts');
+            
+        }
+        // we use the rendering of the parent boost renderer
 		return parent::render_custom_menu($menu);
     }
 
