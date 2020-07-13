@@ -93,23 +93,24 @@ class core_renderer extends \core_renderer {
             $branch->add('Capability Overview', new moodle_url('/admin/tool/capability/index.php'), 'Capability Overview');
             //
         }
-        // stdeunt in course page
-        $context = $PAGE->context;
-        if (isloggedin()  &&  ($COURSE->id != SITEID) && ($context->contextlevel == CONTEXT_COURSE))
-        {
 
-            $is_student = has_capability('mod/assign:submit', $context);
+        $context    = $PAGE->context;
+        // stdeunt in course page
+        if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('mod/assign:submit', $context))
+        {
             // add menu item called ThisCourse
-            $course_id = $COURSE->id;
-            $branchlabel = "ThisCourse";
-            $branchurl   = new moodle_url('/course/index.php');
-            $branchtitle = $branchlabel;
-            $branchsort  = 12000 ;
-            $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+            $course_id      = $COURSE->id;
+            $branchlabel    = "ThisCourse";
+            $branchurl      = new moodle_url('/course/index.php');
+            $branchtitle    = $branchlabel;
+            $branchsort     = 12000 ;
+            $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
             // Now start adding menu items under this menu branch
             //
             // Maintanance: add as menu element
-            $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id), 'Assignments');
+            $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
+            $branch->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
+            $branch->add('Quizzes',     new moodle_url('/mod/quiz/index.php'   . '?id=' . $course_id),   'Quizzes');
         }
         // we use the rendering of the parent boost renderer
 		return parent::render_custom_menu($menu);
