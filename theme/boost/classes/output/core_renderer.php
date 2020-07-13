@@ -53,7 +53,7 @@ class core_renderer extends \core_renderer {
  */
 	protected function render_custom_menu(\custom_menu $menu)
     {
-        global $CFG;
+        global $CFG, $PAGE, $COURSE;
         require_once($CFG->dirroot.'/course/lib.php');
         // mycourses menu on all pages
         if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
@@ -91,7 +91,24 @@ class core_renderer extends \core_renderer {
             $branch->add('User Profile Fields', new moodle_url('/user/profile/index.php'), 'User Profile Fields');
             // Capability Overview
             $branch->add('Capability Overview', new moodle_url('/admin/tool/capability/index.php'), 'Capability Overview');
-            // 
+            //
+        }
+        // stdeunt in course page
+        $context = context_course::instance($COURSE->id);
+        $is_student = has_capability('mod/assign:submit', $context);
+        if (isloggedin() && $is_student &&  ($COURSE->id != SITEID))
+        {
+            // add menu item called ThisCourse
+            $course_id = $COURSE->id;
+            $branchlabel = "ThisCourse";
+            $branchurl   = new moodle_url('/course/index.php');
+            $branchtitle = $branchlabel;
+            $branchsort  = 12000 ;
+            $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+            // Now start adding menu items under this menu branch
+            //
+            // Maintanance: add as menu element
+            $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?' . $course_id), 'Assignments');
         }
         // we use the rendering of the parent boost renderer
 		return parent::render_custom_menu($menu);
