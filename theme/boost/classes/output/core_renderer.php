@@ -123,7 +123,7 @@ class core_renderer extends \core_renderer {
                 // Easy access to enrolment methods
                 $branch->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
                 // easy access to Question bank from this course
-                $branch->add('Question Bank',       new moodle_url('/question/edit.php'     . '?id=' . $course_id),   'Question Bank');
+                $branch->add('Question Bank',       new moodle_url('/question/edit.php'     . '?courseid=' . $course_id),   'Question Bank');
             }
         }
         // we use the rendering of the parent boost renderer
