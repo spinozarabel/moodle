@@ -117,15 +117,13 @@ class core_renderer extends \core_renderer {
             }
 
             // teacher in course page
-            if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('mod/assign:submit', $context))
+            if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('moodle/grade:edit', $context))
             {
-                // add menu branch called ThisCourse
-                $course_id      = $COURSE->id;
-                $branchlabel    = "ThisCourse";
-                $branchurl      = new moodle_url('/course/index.php');
-                $branchtitle    = $branchlabel;
-                $branchsort     = 12000 ;
-                $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+                // add menu items specific to teachers only
+                // Easy access to enrolment methods
+                $branch->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
+                // easy access to Question bank from this course
+                $branch->add('Question Bank',       new moodle_url('/question/edit.php'     . '?id=' . $course_id),   'Question Bank');
             }
         }
         // we use the rendering of the parent boost renderer
