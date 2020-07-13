@@ -97,8 +97,8 @@ class core_renderer extends \core_renderer {
         $context = $PAGE->context;
         if (isloggedin()  &&  ($COURSE->id != SITEID) && ($context->contextlevel == CONTEXT_COURSE))
         {
-            
-            $is_student = has_capability('mod/assign:submit', $context->id);
+
+            $is_student = has_capability('mod/assign:submit', $context);
             // add menu item called ThisCourse
             $course_id = $COURSE->id;
             $branchlabel = "ThisCourse";
