@@ -77,9 +77,21 @@ class core_renderer extends \core_renderer {
             $branchtitle = $branchlabel;
             $branchsort  = 11000 ;
             $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+            // Maintanance: add as menu element
             $branch->add('Maintanance', new moodle_url('/admin/settings.php?section=maintenancemode'), 'Maintanance');
-            $branch->add('Cohorts', new moodle_url('/cohort/index.php'), 'Cohorts');
-            
+            // Cohorts: add as menu element
+            $branch->add('Manage Cohorts', new moodle_url('/cohort/index.php'), 'Manage Cohorts');
+            // Manage Activities plugins settings
+            $branch->add('Manage Activities', new moodle_url('/admin/modules.php'), 'Manage Activities');
+            // Browse list of users
+            $branch->add('Browse users', new moodle_url('/admin/user.php'), 'Browse users');
+            // Bulk user actions
+            $branch->add('Bulk user actions', new moodle_url('/admin/user_bulk.php'), 'Bulk user actions');
+            // user profile fields
+            $branch->add('User Profile Fields', new moodle_url('/user/profile/index.php'), 'User Profile Fields');
+            // Capability Overview
+            $branch->add('Capability Overview', new moodle_url('/admin/tool/capability/index.php'), 'Capability Overview');
+            // 
         }
         // we use the rendering of the parent boost renderer
 		return parent::render_custom_menu($menu);
