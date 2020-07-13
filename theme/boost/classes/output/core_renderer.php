@@ -109,7 +109,7 @@ class core_renderer extends \core_renderer {
             // Now start adding menu items under this menu branch
             //
             // Maintanance: add as menu element
-            $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?' . $course_id), 'Assignments');
+            $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id), 'Assignments');
         }
         // we use the rendering of the parent boost renderer
 		return parent::render_custom_menu($menu);
