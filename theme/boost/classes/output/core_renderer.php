@@ -127,8 +127,6 @@ class core_renderer extends \core_renderer {
                 $branch->add('Activity Completion', new moodle_url('/report/progress/index.php' . '?course=' . $course_id),   'Activity completion');
                 // easy access to Activity report for this course
                 $branch->add('Activity report', new moodle_url('/report/outline/index.php' . '?id=' . $course_id),   'Activity report');
-                // easy access to Stats for this course
-                $branch->add('Stats', new moodle_url('/report/stats/index.php'),   'Stats');
                 // easy access to Question bank for this course
                 $branch->add('Question Bank',       new moodle_url('/question/edit.php'   . '?courseid=' . $course_id),   'Question Bank');
             }
