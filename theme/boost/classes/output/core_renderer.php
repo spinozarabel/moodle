@@ -117,7 +117,7 @@ class core_renderer extends \core_renderer {
                 $branch_thiscourse->add('H5P',         new moodle_url('/mod/h5pactivity/index.php'   . '?id=' . $course_id),   'H5P');
                 //
                 // Add new branch menu called Sections
-                $branchlabel    = "Sections";
+                $branchlabel    = "Topics";
                 $branchurl      = new moodle_url('/course/index.php');
                 $branchtitle    = $branchlabel;
                 $branchsort     = 13000 ;
