@@ -131,7 +131,7 @@ class core_renderer extends \core_renderer {
                     // add a menu item for each section in the loop
                     $section_num    += 1; // increment section number, 1st section starts with 1
                     $section_name   = get_section_name($COURSE, $section);
-                    $section_url    = new moodle_url('/course/view.php' . '?id=' . $course_id . '#section' . $section_num);
+                    $section_url    = new moodle_url('/course/view.php' . '?id=' . $course_id . '#section-' . $section_num);
                     $branch_sections->add($section_name, $section_url, $section_name);
                 }
             }
