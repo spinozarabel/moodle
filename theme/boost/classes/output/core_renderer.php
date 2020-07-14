@@ -110,11 +110,6 @@ class core_renderer extends \core_renderer {
                 $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
                 // Now start adding menu items under this menu branch
                 //
-                // first lets add a aub-menu parent item called Sections
-                $submenu_sections = $branch->add('Sections', new moodle_url('/course/index.php'), 'sections',1);
-                // now lets add the submenu items, all the different sections in this course
-                $submenu_sections->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
-
                 // Add menu items
                 $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
                 $branch->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
