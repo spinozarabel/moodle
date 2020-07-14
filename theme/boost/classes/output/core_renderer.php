@@ -46,54 +46,94 @@ class core_renderer extends \core_renderer {
     // customization added my Madhu from here on
 
     /**
-    * over ride function in parent to render custom menu
-    *
-    * @menu
-    * @copyright  Madhu Avasarala
-    * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-    */
-	protected function render_custom_menu(\custom_menu $menu)
-    {
-        global $CFG;
-        require_once($CFG->dirroot.'/course/lib.php');
-
-        if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
+     * over ride function in parent to render custom menu
+     *
+     * @menu
+     * @copyright  Madhu Avasarala
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    	protected function render_custom_menu(\custom_menu $menu)
         {
-            $branchlabel = get_string('mycourses') ;
-            $branchurl   = new moodle_url('/course/index.php');
-            $branchtitle = $branchlabel;
-            $branchsort  = 10000 ; // lower numbers = higher priority e.g. move this item to the left on the Custom Menu
-            $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
-
-            foreach ($mycourses as $mycourse)
+            global $CFG, $PAGE, $COURSE, $DB;
+            require_once($CFG->dirroot.'/course/lib.php');
+            // mycourses menu on all pages
+            if (isloggedin() && !isguestuser() && $mycourses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC'))
             {
-                $branch->add($mycourse->shortname, new moodle_url('/course/view.php', array('id' => $mycourse->id)), $mycourse->fullname);
+                $branchlabel = get_string('mycourses') ;
+                $branchurl   = new moodle_url('/course/index.php');
+                $branchtitle = $branchlabel;
+                $branchsort  = 10000 ; // lower numbers = higher priority e.g. move this item to the left on the Custom Menu
+                $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+
+                foreach ($mycourses as $mycourse)
+                {
+                    $branch->add($mycourse->shortname, new moodle_url('/course/view.php', array('id' => $mycourse->id)), $mycourse->fullname);
+                }
             }
-        }
-
-
-		/* user is logged in, mycourses object exists and has children
-		if (isloggedin() && $mycourses && $mycourses->has_children())
-        {
-			// Menu heading
-			$branchlabel = get_string('mycourses');
-			$branchurl   = new moodle_url('/course/index.php');
-			$branchtitle = $branchlabel;
-			$branchsort  = 10000;
-			// add the mycourses as new menu header
-			$branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
-
-			foreach ($mycourses->children as $coursenode)
+            // admin menu
+            if (isloggedin() && is_siteadmin())
             {
-				// A label $coursenode->get_content() returns us the text in the navigation node
-				// A url $coursenode->action which is the URL for the node.
-				// A title $coursenode->get_title().
-				$branch->add($coursenode->get_content(), $coursenode->action, $coursenode->get_title());
-			}
-		}
-        */
+                $branchlabel = "Admin";
+                $branchurl   = new moodle_url('/admin/search.php');
+                $branchtitle = $branchlabel;
+                $branchsort  = 11000 ;
+                $branch = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+                // Maintanance: add as menu element
+                $branch->add('Maintanance', new moodle_url('/admin/settings.php?section=maintenancemode'), 'Maintanance');
+                // Cohorts: add as menu element
+                $branch->add('Manage Cohorts', new moodle_url('/cohort/index.php'), 'Manage Cohorts');
+                // Manage Activities plugins settings
+                $branch->add('Manage Activities', new moodle_url('/admin/modules.php'), 'Manage Activities');
+                // Browse list of users
+                $branch->add('Browse users', new moodle_url('/admin/user.php'), 'Browse users');
+                // Bulk user actions
+                $branch->add('Bulk user actions', new moodle_url('/admin/user_bulk.php'), 'Bulk user actions');
+                // user profile fields
+                $branch->add('User Profile Fields', new moodle_url('/user/profile/index.php'), 'User Profile Fields');
+                // Capability Overview
+                $branch->add('Capability Overview', new moodle_url('/admin/tool/capability/index.php'), 'Capability Overview');
+                //
+            }
 
-    	return parent::render_custom_menu($menu);
+            $context    = $PAGE->context ?? null;
+            // we only want to add the menu if valid context exists
+            if ($context)
+            {
+                // if on a course page
+                if (isloggedin()  &&  ($COURSE->id != SITEID))
+                {
+                    // add menu branch called ThisCourse, appears as menu heading
+                    $course_id      = $COURSE->id;
+                    $branchlabel    = "ThisCourse";
+                    $branchurl      = new moodle_url('/course/index.php');
+                    $branchtitle    = $branchlabel;
+                    $branchsort     = 12000 ;
+                    $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+                    // Now start adding menu items under this menu branch
+                    //
+                    // Add menu items
+                    $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
+                    $branch->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
+                    $branch->add('Quizzes',     new moodle_url('/mod/quiz/index.php'   . '?id=' . $course_id),   'Quizzes');
+                    $branch->add('H5P',         new moodle_url('/mod/h5pactivity/index.php'   . '?id=' . $course_id),   'H5P');
+                }
+
+                // is teacher in course page? teacher is defined as anyone who has capability to grade in this course
+                if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('moodle/grade:edit', $context))
+                {
+                    // add menu items specific to teachers only
+                    // Easy access to enrolment methods
+                    $branch->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
+                    // easy access to Activity completion for this course
+                    $branch->add('Activity Completion', new moodle_url('/report/progress/index.php' . '?course=' . $course_id),   'Activity completion');
+                    // easy access to Activity report for this course
+                    $branch->add('Activity report', new moodle_url('/report/outline/index.php' . '?id=' . $course_id),   'Activity report');
+                    // easy access to Question bank for this course
+                    $branch->add('Question Bank',       new moodle_url('/question/edit.php'   . '?courseid=' . $course_id),   'Question Bank');
+                }
+            }
+            // we use the rendering of the parent boost renderer
+    		return parent::render_custom_menu($menu);
         }
 
     }
