@@ -128,6 +128,12 @@ class core_renderer extends \core_renderer {
                 $section_num = 0;
                 foreach($sections as $idx => $section)
                 {
+                    if (!$section->uservisible && !has_capability('moodle/grade:edit', $context))
+                    {
+                        // section is hiden and user is not a teacher so don't add this section to menu
+                        $section_num    += 1; // increment section number, 1st section starts with 0
+                        continue;   // skip this iteration and continue with next interation
+                    }
                     // add a menu item for each section in the loop
                     $section_name   = get_section_name($COURSE, $section);
                     $section_url    = new moodle_url('/course/view.php' . '?id=' . $course_id . '#section-' . $section_num);
