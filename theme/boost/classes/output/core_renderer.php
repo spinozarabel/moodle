@@ -24,7 +24,7 @@ defined('MOODLE_INTERNAL') || die;
  * Renderers to align Moodle's HTML with that expected by Bootstrap
  *
  * @package    theme_boost
- * @copyright  2012 Bas Brands, www.basbrands.nl
+ * @copyright  2012 Bas Brands, www.basbrands.nl, Madhu Avasarala
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class core_renderer extends \core_renderer {
@@ -95,12 +95,13 @@ class core_renderer extends \core_renderer {
         }
 
         $context    = $PAGE->context ?? null;
+        // we only want to add the menu if valid context exists
         if ($context)
         {
-            // student in course page
-            if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('mod/assign:submit', $context))
+            // if on a course page
+            if (isloggedin()  &&  ($COURSE->id != SITEID))
             {
-                // add menu item called ThisCourse
+                // add menu branch called ThisCourse, appears as menu heading
                 $course_id      = $COURSE->id;
                 $branchlabel    = "ThisCourse";
                 $branchurl      = new moodle_url('/course/index.php');
@@ -109,14 +110,19 @@ class core_renderer extends \core_renderer {
                 $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
                 // Now start adding menu items under this menu branch
                 //
-                // Maintanance: add as menu element
+                // first lets add a aub-menu parent item called Sections
+                $submenu_sections = $branch->add('Sections', new moodle_url('/course/index.php'), 'sections');
+                // now lets add the submenu items, all the different sections in this course
+                $submenu_sections->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
+
+                // Add menu items
                 $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
                 $branch->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
                 $branch->add('Quizzes',     new moodle_url('/mod/quiz/index.php'   . '?id=' . $course_id),   'Quizzes');
                 $branch->add('H5P',         new moodle_url('/mod/h5pactivity/index.php'   . '?id=' . $course_id),   'H5P');
             }
 
-            // teacher in course page
+            // is teacher in course page? teacher is defined as anyone who has capability to grade in this course
             if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('moodle/grade:edit', $context))
             {
                 // add menu items specific to teachers only
