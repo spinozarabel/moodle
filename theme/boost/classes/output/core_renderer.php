@@ -51,7 +51,7 @@ class core_renderer extends \core_renderer {
  * @copyright  Madhu Avasarala
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-	protected function render_custom_menu(\custom_menu $menu)
+    protected function render_custom_menu(\custom_menu $menu)
     {
         global $CFG, $PAGE, $COURSE, $DB;
         require_once($CFG->dirroot.'/course/lib.php');
@@ -107,14 +107,29 @@ class core_renderer extends \core_renderer {
                 $branchurl      = new moodle_url('/course/index.php');
                 $branchtitle    = $branchlabel;
                 $branchsort     = 12000 ;
-                $branch         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+                $branch_thiscourse         = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
                 // Now start adding menu items under this menu branch
                 //
                 // Add menu items
-                $branch->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
-                $branch->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
-                $branch->add('Quizzes',     new moodle_url('/mod/quiz/index.php'   . '?id=' . $course_id),   'Quizzes');
-                $branch->add('H5P',         new moodle_url('/mod/h5pactivity/index.php'   . '?id=' . $course_id),   'H5P');
+                $branch_thiscourse->add('Assignments', new moodle_url('/mod/assign/index.php' . '?id=' . $course_id),  'Assignments');
+                $branch_thiscourse->add('Forums',      new moodle_url('/mod/forum/index.php'  . '?id=' . $course_id),   'Forums');
+                $branch_thiscourse->add('Quizzes',     new moodle_url('/mod/quiz/index.php'   . '?id=' . $course_id),   'Quizzes');
+                $branch_thiscourse->add('H5P',         new moodle_url('/mod/h5pactivity/index.php'   . '?id=' . $course_id),   'H5P');
+                //
+                // Add new branch menu called Sections
+                $branchlabel    = "Sections";
+                $branchurl      = new moodle_url('/course/index.php');
+                $branchtitle    = $branchlabel;
+                $branchsort     = 13000 ;
+                $branch_sections = $menu->add($branchlabel, $branchurl, $branchtitle, $branchsort);
+                // Now start adding menu items under this menu branch
+                $modinfo    = get_fast_modinfo($this->page->course);
+                $sections   = $modinfo->get_section_info_all();
+                foreach($sections as $idx => $section)
+                {
+                    error_log(print_r($section,true));
+
+                }
             }
 
             // is teacher in course page? teacher is defined as anyone who has capability to grade in this course
@@ -122,17 +137,17 @@ class core_renderer extends \core_renderer {
             {
                 // add menu items specific to teachers only
                 // Easy access to enrolment methods
-                $branch->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
+                $branch_thiscourse->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
                 // easy access to Activity completion for this course
-                $branch->add('Activity Completion', new moodle_url('/report/progress/index.php' . '?course=' . $course_id),   'Activity completion');
+                $branch_thiscourse->add('Activity Completion', new moodle_url('/report/progress/index.php' . '?course=' . $course_id),   'Activity completion');
                 // easy access to Activity report for this course
-                $branch->add('Activity report', new moodle_url('/report/outline/index.php' . '?id=' . $course_id),   'Activity report');
+                $branch_thiscourse->add('Activity report', new moodle_url('/report/outline/index.php' . '?id=' . $course_id),   'Activity report');
                 // easy access to Question bank for this course
-                $branch->add('Question Bank',       new moodle_url('/question/edit.php'   . '?courseid=' . $course_id),   'Question Bank');
+                $branch_thiscourse->add('Question Bank',       new moodle_url('/question/edit.php'   . '?courseid=' . $course_id),   'Question Bank');
             }
         }
         // we use the rendering of the parent boost renderer
-		return parent::render_custom_menu($menu);
+    	return parent::render_custom_menu($menu);
     }
 
 }
