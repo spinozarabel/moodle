@@ -146,6 +146,8 @@ class core_renderer extends \core_renderer {
             if (isloggedin()  &&  ($COURSE->id != SITEID) && has_capability('moodle/grade:edit', $context))
             {
                 // add menu items specific to teachers only
+                // Easy access to participants
+                $branch_thiscourse->add('Participants',   new moodle_url('/user/index.php'   . '?id=' . $course_id),   'Participants');
                 // Easy access to enrolment methods
                 $branch_thiscourse->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
                 // easy access to Activity completion for this course
