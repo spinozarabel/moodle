@@ -125,10 +125,14 @@ class core_renderer extends \core_renderer {
                 // Now start adding menu items under this menu branch
                 $modinfo    = get_fast_modinfo($this->page->course);
                 $sections   = $modinfo->get_section_info_all();
+                $section_num = 0;
                 foreach($sections as $idx => $section)
                 {
-                    error_log(print_r($section,true));
-
+                    // add a menu item for each section in the loop
+                    $section_num    += 1; // increment section number, 1st section starts with 1
+                    $section_name   = get_section_name($COURSE, $section);
+                    $section_url    = new moodle_url('/course/view.php' . '?id=' . $course_id . '#section' . $section_num);
+                    $branch_sections->add($section_name, $section_url, $section_name);
                 }
             }
 
