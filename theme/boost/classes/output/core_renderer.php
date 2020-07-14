@@ -123,8 +123,14 @@ class core_renderer extends \core_renderer {
                 // add menu items specific to teachers only
                 // Easy access to enrolment methods
                 $branch->add('Enrolment Methods',   new moodle_url('/enrol/instances.php'   . '?id=' . $course_id),   'Enrolment Methods');
-                // easy access to Question bank from this course
-                $branch->add('Question Bank',       new moodle_url('/question/edit.php'     . '?courseid=' . $course_id),   'Question Bank');
+                // easy access to Activity completion for this course
+                $branch->add('Activity Completion', new moodle_url('/report/progress/index.php' . '?course=' . $course_id),   'Activity completion');
+                // easy access to Activity report for this course
+                $branch->add('Activity report', new moodle_url('/report/outline/index.php' . '?id=' . $course_id),   'Activity report');
+                // easy access to Stats for this course
+                $branch->add('Stats', new moodle_url('/report/stats/index.php'),   'Stats');
+                // easy access to Question bank for this course
+                $branch->add('Question Bank',       new moodle_url('/question/edit.php'   . '?courseid=' . $course_id),   'Question Bank');
             }
         }
         // we use the rendering of the parent boost renderer
