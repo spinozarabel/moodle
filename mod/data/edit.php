@@ -181,6 +181,13 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
 
         if ($processeddata->validated) {
             // Enough data to update the record.
+// customization by madhu Start -----------------------------------------
+			// name of database activity shall contain "leave managenet system" for customization
+			if (stripos($data->name, 'leave management system') !== false) {
+				// I am assuming that the owner of the record is editing her entry and not the manager :-)
+				adjust_existing_leave($data, $datarecord,$record);
+			}
+// Customization by madhu END -------------------------------------------
             data_update_record_fields_contents($data, $record, $context, $datarecord, $processeddata);
             core_tag_tag::set_item_tags('mod_data', 'data_records', $rid, $context, $tags);
 
@@ -203,7 +210,13 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
         // Add the new notification data.
         $generalnotifications = array_merge($generalnotifications, $processeddata->generalnotifications);
         $fieldnotifications = array_merge($fieldnotifications, $processeddata->fieldnotifications);
-
+// customization by Madhu START ------------------------------------------------
+		// name of database activity shall contain "leave managenet system" for customization
+		if (stripos($data->name, 'leave management system') !== false) {
+				// before inserting the submitted data as record adjust leave banks based on leave type
+			adjust_new_leave($data, $datarecord);
+		}
+// customization by Madhu END --------------------------------------------------
         // Add instance to data_record.
         if ($processeddata->validated && $recordid = data_add_record($data, $currentgroup)) {
 
