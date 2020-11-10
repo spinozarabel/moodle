@@ -1495,3 +1495,161 @@ function data_update_record_fields_contents($data, $record, $context, $datarecor
     $event->add_record_snapshot('data', $data);
     $event->trigger();
 }
+
+/**
+ * Processes the CLbank and SLbank data in the subitted data based on leave data and type
+ *
+ * @param  stdClass $data           contains information of the complete data module instance
+ * @param  stdClass $datarecord     the submitted data, that goes into the table data_content
+ * @param  stdClass $user_profile_leave saves CL and SL in JSON string
+ * @since  Moodle 3.3 added by Madhu
+ */
+function adjust_new_leave($data, $datarecord) {
+  global $DB, $USER;
+  //
+  // Check if there are any leave records created by this user
+	if ( $DB->record_exists('data_records', array(
+                                            'dataid'=>$data->id,
+                                            'userid'   =>  $USER->id,
+                                              )
+                        ) ==  false )
+    {
+    // no records exist for this user
+    // Get user leave information from user_profile_fields
+  	$field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  	$user_profile_leave = $DB->get_record('user_info_data', array(
+  		  'userid'   =>  $USER->id,
+  		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+    // the object above is only needed for its handle to update later on.
+    // no data is derived form it as it maybe unset or invalid data
+    // for beginning of year
+    //
+    // reset leave for new user in this LMS
+    $leave_array = array
+        (
+          "CL"  =>  4,
+          "SL"  =>  5,
+        );
+  }
+  else {
+    // records exist for this user, so profile_field will have valid json
+    $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+    $user_profile_leave = $DB->get_record('user_info_data', array(
+  		  'userid'   =>  $USER->id,
+  		  'fieldid'  =>  $field->id));  // Get fieldid based on shortname "casualleave"
+    $leave_array  = json_decode(	$user_profile_leave->data, true );
+  }
+  // at this point we have a valid $leave_array to process
+	// So we have a $leave_array now that contains pre-leave values
+	// Get details from submitted form to process the fields content based on form
+	//
+	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
+			// this will be a string like field_44 used as key for $datarecord
+	$field_SL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL"))->id;
+			//
+	$field_numlvdays = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Number of leave days"))->id;
+			//
+	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
+			//
+	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
+			//
+	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+			//
+	$field_employeeId = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "employeeId"))->id;
+	//
+	// fill in the employeeId in the record since we don't know if this was filled in or if so done correctly
+	$datarecord->$field_employeeId = $USER->idnumber;
+	//
+	// adjust CL and SL before leave to either reset values or current values in profile field
+  // these are contained in the $leave_array now
+	$datarecord->$field_CL = $leave_array["CL"];
+	$datarecord->$field_SL = $leave_array["SL"];
+	// depending on leave type adjust the leave banks based on leave taken
+	switch ($datarecord->$field_lvtype) {
+		case "Sick leave" :
+					// the SL bank reduces and the CL bank stays the same. These are calculated fields
+			$datarecord->$field_SLbank = $leave_array["SL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_CLbank = $leave_array["CL"];
+			break;
+		case "Casual leave" :
+					// The CL bank reduces but the SL bank stays the same. These are calculated fields
+			$datarecord->$field_CLbank = $leave_array["CL"] - $datarecord->$field_numlvdays;
+			$datarecord->$field_SLbank = $leave_array["SL"];
+			}
+	// update the user profile fields with new values for CL and SL leave banks
+  // below are temporary variables used to build the array needed for json_encode
+  $CLbank = $datarecord->$field_CLbank;
+  $SLbank = $datarecord->$field_SLbank;
+  // construct new $leave_array to json_encode and store back
+  $leave_array = array(
+    "CL"  => $CLbank ,
+    "SL"  => $SLbank ,
+  );
+  // update  with latest leave banks json_encode
+	$user_profile_leave->data =  json_encode($leave_array);
+	$DB->update_record('user_info_data', $user_profile_leave, $bulk=false);
+}
+/**
+ * Processes the CLbank and SLbank data in the subitted data based on leave data and type
+ *
+ * @param  stdClass $data           contains information of the complete data module instance
+ * @param  stdClass $datarecord     the submitted data, that goes into the table data_content
+ * @param  stdClass $record			Contains information of this record in table
+ * @since  Moodle 3.3 added by Madhu
+ */
+function adjust_existing_leave($data, $datarecord,$record)
+{
+    global $DB, $USER;
+	// $data contains information of the complete data module instance
+	// $datarecord is the record that goes into the table data_content
+	// $user_profile_leave is an object that is a record from the table user_info_data
+	//
+  // Get user leave information from user_profile_fields
+  $field = $DB->get_record('user_info_field', array('shortname' => 'leave'));
+  $user_profile_leave = $DB->get_record('user_info_data', array(
+      'userid'   =>  $USER->id,
+      'fieldid'  =>  $field->id));  // Get fieldid based on shortname "leave"
+  $leave_array  = json_decode(	$user_profile_leave->data, true );
+  // Get user leave information from user_profile_fields
+	//
+	//
+	// get information from submitted data to adjust
+	//
+	$field_CL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL"))->id;
+			// this will be a string like field_44
+	$field_SL = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL"))->id;
+			//
+	$field_numlvdays = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Number of leave days"))->id;
+			//
+	$field_lvtype = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "Leave request type"))->id;
+			//
+	$field_CLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "CL bank after leave"))->id;
+			//
+	$field_SLbank = 'field_' . $DB->get_record('data_fields', array('dataid' => $data->id, 'name' => "SL bank after leave"))->id;
+	//
+	//
+	// depending on leave type adjust the leave banks based on leave taken
+	switch ($datarecord->$field_lvtype) {
+		case "Sick leave" :
+					// the SL bank reduces and the CL bank stays the same. These are calculated fields
+			$datarecord->$field_SLbank = $datarecord->$field_SL - $datarecord->$field_numlvdays;
+			// no change to the $datarecord->$field_CLbank
+			break;
+		case "Casual leave" :
+					// The CL bank reduces but the SL bank stays the same. These are calculated fields
+			$datarecord->$field_CLbank = $datarecord->$field_CL - $datarecord->$field_numlvdays;
+			// no change to $datarecord->$field_SLbank
+			}
+  //
+  // Bank values stored in variables after leave adjustments
+  $CLbank = $datarecord->$field_CLbank;
+  $SLbank = $datarecord->$field_SLbank;
+  // construct new $leave_array to json_encode and update user_profile_field
+  $leave_array = array(
+    "CL"  => $CLbank ,
+    "SL"  => $SLbank ,
+  );
+  // update  with latest leave banks json_encode
+	$user_profile_leave->data =  json_encode($leave_array);
+	$DB->update_record('user_info_data', $user_profile_leave, $bulk=false);
+}
