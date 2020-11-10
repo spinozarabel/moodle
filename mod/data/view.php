@@ -402,14 +402,14 @@ if ($showactivity) {
     /// Check the number of entries required against the number of entries already made (doesn't apply to teachers)
         if ($data->entriesleft = data_get_entries_left_to_add($data, $numentries, $canmanageentries)) {
             $strentrieslefttoadd = get_string('entrieslefttoadd', 'data', $data);
-            echo $OUTPUT->notification($strentrieslefttoadd);
+    //      echo $OUTPUT->notification($strentrieslefttoadd); // added by MA
         }
 
     /// Check the number of entries required before to view other participant's entries against the number of entries already made (doesn't apply to teachers)
         $requiredentries_allowed = true;
         if ($data->entrieslefttoview = data_get_entries_left_to_view($data, $numentries, $canmanageentries)) {
             $strentrieslefttoaddtoview = get_string('entrieslefttoaddtoview', 'data', $data);
-            echo $OUTPUT->notification($strentrieslefttoaddtoview);
+        //  echo $OUTPUT->notification($strentrieslefttoaddtoview);  // added by MA
             $requiredentries_allowed = false;
         }
 
