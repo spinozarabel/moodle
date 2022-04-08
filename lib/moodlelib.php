@@ -3886,10 +3886,6 @@ function create_user_record($username, $password, $auth = 'manual') {
         }
     }
 
-    if (!isset($newuser->city)) {
-        $newuser->city = '';
-    }
-
     $newuser->auth = $auth;
     $newuser->username = $username;
 
@@ -8690,8 +8686,9 @@ function format_float($float, $decimalpoints=1, $localized=true, $stripzeros=fal
     }
 
     $result = number_format($float, $decimalpoints, $separator, '');
-    if ($stripzeros) {
+    if ($stripzeros && $decimalpoints > 0) {
         // Remove zeros and final dot if not needed.
+        // However, only do this if there is a decimal point!
         $result = preg_replace('~(' . preg_quote($separator, '~') . ')?0+$~', '', $result);
     }
     return $result;
