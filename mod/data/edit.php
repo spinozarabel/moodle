@@ -143,9 +143,23 @@ if ($datarecord && confirm_sesskey()) {
     if ($processeddata->validated) {
         if ($rid) {
             $recordid = $rid;
+			// customization by madhu Start -----------------------------------------
+            // name of database activity shall contain "leave managenet system" for customization
+            if (stripos($data->name, 'leave management system') !== false) {
+                // I am assuming that the owner of the record is editing her entry and not the manager :-)
+                adjust_existing_leave($data, $datarecord,$record);
+            }
+            // Customization by madhu END -------------------------------------------
             // Updating an existing record.
             data_update_record_fields_contents($data, $record, $context, $datarecord, $processeddata);
         } else {
+			// customization by Madhu START ------------------------------------------------
+			// name of database activity shall contain "leave managenet system" for customization
+			if (stripos($data->name, 'leave management system') !== false) {
+				// before inserting the submitted data as record adjust leave banks based on leave type
+				adjust_new_leave($data, $datarecord);
+			}
+			// customization by Madhu END --------------------------------------------------
             // Add instance to data_record.
             $recordid = data_add_record($data, $currentgroup);
             if ($recordid) {
