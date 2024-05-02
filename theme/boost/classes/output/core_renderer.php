@@ -50,7 +50,7 @@ class core_renderer extends \core_renderer {
             $url->param('edit', 'on');
             $editstring = get_string('turneditingon');
         }
-        $button = new \single_button($url, $editstring, $method, ['class' => 'btn btn-primary']);
+        $button = new \single_button($url, $editstring, $method, \single_button::BUTTON_PRIMARY);
         return $this->render_single_button($button);
     }
 
@@ -224,15 +224,14 @@ class core_renderer extends \core_renderer {
                     if ($button['buttontype'] === 'message') {
                         \core_message\helper::messageuser_requirejs();
                     }
-                    $image = $this->pix_icon($button['formattedimage'], $button['title'], 'moodle', array(
+                    $image = $this->pix_icon($button['formattedimage'], '', 'moodle', array(
                         'class' => 'iconsmall',
-                        'role' => 'presentation'
                     ));
                     $image .= html_writer::span($button['title'], 'header-button-title');
                 } else {
                     $image = html_writer::empty_tag('img', array(
                         'src' => $button['formattedimage'],
-                        'role' => 'presentation'
+                        'alt' => $button['title'],
                     ));
                 }
                 $html .= html_writer::link($button['url'], html_writer::tag('span', $image), $button['linkattributes']);

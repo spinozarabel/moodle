@@ -1830,7 +1830,15 @@ class html_writer {
     public static function img($src, $alt, array $attributes = null) {
         $attributes = (array)$attributes;
         $attributes['src'] = $src;
-        $attributes['alt'] = $alt;
+        // In case a null alt text is provided, set it to an empty string.
+        $attributes['alt'] = $alt ?? '';
+        if (array_key_exists('role', $attributes) && core_text::strtolower($attributes['role']) === 'presentation') {
+            // A presentation role is not necessary for the img tag.
+            // If a non-empty alt text is provided, the presentation role will conflict with the alt text.
+            // An empty alt text denotes a decorative image. The presence of a presentation role is redundant.
+            unset($attributes['role']);
+            debugging('The presentation role is not necessary for an img tag.', DEBUG_DEVELOPER);
+        }
 
         return self::empty_tag('img', $attributes);
     }
@@ -2039,16 +2047,19 @@ class html_writer {
      * @param int $currenttime A default timestamp in GMT
      * @param int $step minute spacing
      * @param array $attributes - html select element attributes
-     * @return HTML fragment
+     * @param float|int|string $timezone the timezone to use to calculate the time
+     *        {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
+     * @return string HTML fragment
      */
-    public static function select_time($type, $name, $currenttime = 0, $step = 5, array $attributes = null) {
+    public static function select_time($type, $name, $currenttime = 0, $step = 5, array $attributes = null, $timezone = 99) {
         global $OUTPUT;
 
         if (!$currenttime) {
             $currenttime = time();
         }
         $calendartype = \core_calendar\type_factory::get_calendar_instance();
-        $currentdate = $calendartype->timestamp_to_date_array($currenttime);
+        $currentdate = $calendartype->timestamp_to_date_array($currenttime, $timezone);
+
         $userdatetype = $type;
         $timeunits = array();
 
@@ -5188,7 +5199,7 @@ class progress_bar implements renderable, templatable {
         $this->percent = $percent;
         $this->lastupdate = microtime(true);
 
-        echo $OUTPUT->render_progress_bar_update($this->html_id, sprintf("%.1f", $this->percent), $msg, $estimatemsg);
+        echo $OUTPUT->render_progress_bar_update($this->html_id, $this->percent, $msg, $estimatemsg);
         flush();
     }
 

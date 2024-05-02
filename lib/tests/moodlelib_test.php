@@ -646,6 +646,38 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame('', clean_param(null, PARAM_TEXT));
     }
 
+    /**
+     * Data provider for {@see test_clean_param_host}
+     *
+     * @return array
+     */
+    public static function clean_param_host_provider(): array {
+        return [
+            'Valid (low octets)' => ['0.0.0.0', '0.0.0.0'],
+            'Valid (high octets)' => ['255.255.255.255', '255.255.255.255'],
+            'Invalid first octet' => ['256.1.1.1', ''],
+            'Invalid second octet' => ['1.256.1.1', ''],
+            'Invalid third octet' => ['1.1.256.1', ''],
+            'Invalid fourth octet' => ['1.1.1.256', ''],
+            'Valid host' => ['moodle.org', 'moodle.org'],
+            'Invalid host' => ['.example.com', ''],
+        ];
+    }
+
+    /**
+     * Testing cleaning parameters with PARAM_HOST
+     *
+     * @param string $param
+     * @param string $expected
+     *
+     * @dataProvider clean_param_host_provider
+     *
+     * @covers \clean_param
+     */
+    public function test_clean_param_host(string $param, string $expected): void {
+        $this->assertEquals($expected, clean_param($param, PARAM_HOST));
+    }
+
     public function test_clean_param_url() {
         // Test PARAM_URL and PARAM_LOCALURL a bit.
         // Valid URLs.
@@ -4618,24 +4650,26 @@ EOT;
     public function test_unserialize_array() {
         $a = [1, 2, 3];
         $this->assertEquals($a, unserialize_array(serialize($a)));
-        $this->assertEquals($a, unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => 2, 'b' => 'cde'];
-        $this->assertEquals($a, unserialize_array(serialize($a)));
         $this->assertEquals($a, unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => 2, 'b' => 'c"d"e'];
         $this->assertEquals($a, unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => ['c' => 'd', 'e' => 'f'], 'b' => 'cde'];
         $this->assertEquals($a, unserialize_array(serialize($a)));
-
-        // Can not unserialize if any string contains semicolons.
+        $a = ['a' => 1, 2 => ['c' => 'd', 'e' => ['f' => 'g']], 'b' => 'cde'];
+        $this->assertEquals($a, unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => 2, 'b' => 'c"d";e'];
-        $this->assertEquals(false, unserialize_array(serialize($a)));
+        $this->assertEquals($a, unserialize_array(serialize($a)));
 
         // Can not unserialize if there are any objects.
         $a = (object)['a' => 1, 2 => 2, 'b' => 'cde'];
-        $this->assertEquals(false, unserialize_array(serialize($a)));
+        $this->assertFalse(unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => 2, 'b' => (object)['a' => 'cde']];
-        $this->assertEquals(false, unserialize_array(serialize($a)));
+        $this->assertFalse(unserialize_array(serialize($a)));
+        $a = ['a' => 1, 2 => 2, 'b' => ['c' => (object)['a' => 'cde']]];
+        $this->assertFalse(unserialize_array(serialize($a)));
+        $a = ['a' => 1, 2 => 2, 'b' => ['c' => new lang_string('no')]];
+        $this->assertFalse(unserialize_array(serialize($a)));
 
         // Array used in the grader report.
         $a = array('aggregatesonly' => [51, 34], 'gradesonly' => [21, 45, 78]);

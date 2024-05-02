@@ -260,6 +260,18 @@ class externallib_test extends externallib_advanced_testcase {
         $this->assertCount(0, $result['warnings']);
         $this->assertEquals($expected, $result['settings']);
 
+        // H5P custom CSS.
+        set_config('h5pcustomcss', '.debug { color: #fab; }', 'core_h5p');
+        \core_h5p\local\library\autoloader::register();
+        \core_h5p\file_storage::generate_custom_styles();
+        $result = external::get_config();
+        $result = external_api::clean_returnvalue(external::get_config_returns(), $result);
+
+        $customcss = \core_h5p\file_storage::get_custom_styles();
+        $expected[] = ['name' => 'h5pcustomcssurl', 'value' => $customcss['cssurl']->out() . '?ver=' . $customcss['cssversion']];
+        $this->assertCount(0, $result['warnings']);
+        $this->assertEquals($expected, $result['settings']);
+
         // Change a value and retrieve filtering by section.
         set_config('commentsperpage', 1);
         $expected[10]['value'] = 1;
@@ -404,18 +416,18 @@ class externallib_test extends externallib_advanced_testcase {
         $result = external::get_autologin_key($token->privatetoken);
         $result = external_api::clean_returnvalue(external::get_autologin_key_returns(), $result);
 
-        // Change min time between requests to 30 seconds.
-        set_config('autologinmintimebetweenreq', 30, 'tool_mobile');
+        // Change min time between requests to 3 minutes.
+        set_config('autologinmintimebetweenreq', 3 * MINSECS, 'tool_mobile');
 
-        // Mock a previous request, 60 seconds ago.
-        $mocktime = time() - MINSECS;
+        // Mock a previous request, 4 minutes ago.
+        $mocktime = time() - (4 * MINSECS);
         set_user_preference('tool_mobile_autologin_request_last', $mocktime, $USER);
-        $result = external::get_autologin_key($token->privatetoken);    // All good, we were expecint 30 seconds or more.
+        $result = external::get_autologin_key($token->privatetoken);
         $result = external_api::clean_returnvalue(external::get_autologin_key_returns(), $result);
 
         // We just requested one token, we must wait.
         $this->expectException('moodle_exception');
-        $this->expectExceptionMessage(get_string('autologinkeygenerationlockout', 'tool_mobile'));
+        $this->expectExceptionMessage(get_string('autologinkeygenerationlockout', 'tool_mobile', 3));
         $result = external::get_autologin_key($token->privatetoken);
     }
 

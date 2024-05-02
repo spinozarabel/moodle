@@ -35,7 +35,6 @@ const selectors = {
 };
 const component = document.querySelector(selectors.component);
 const courseID = component.querySelector(selectors.courseid).dataset.courseid;
-const bannedFilterFields = ['profileimageurlsmall', 'profileimageurl', 'id', 'link', 'matchingField', 'matchingFieldName'];
 
 export default class UserSearch extends GradebookSearchClass {
 
@@ -108,8 +107,9 @@ export default class UserSearch extends GradebookSearchClass {
      * @returns {Array} The users that match the given criteria.
      */
     async filterDataset(filterableData) {
+        const stringMap = await this.getStringMap();
         return filterableData.filter((user) => Object.keys(user).some((key) => {
-            if (user[key] === "" || bannedFilterFields.includes(key)) {
+            if (user[key] === "" || !stringMap.get(key)) {
                 return false;
             }
             return user[key].toString().toLowerCase().includes(this.getPreppedSearchTerm());
@@ -127,16 +127,24 @@ export default class UserSearch extends GradebookSearchClass {
             this.getMatchedResults().map((user) => {
                 for (const [key, value] of Object.entries(user)) {
                     const valueString = value.toString().toLowerCase();
-                    if (!valueString.includes(this.getPreppedSearchTerm())) {
+                    const preppedSearchTerm = this.getPreppedSearchTerm();
+                    const searchTerm = this.getSearchTerm();
+
+                    if (!valueString.includes(preppedSearchTerm)) {
                         continue;
                     }
+
                     // Ensure we have a good string, otherwise fallback to the key.
                     user.matchingFieldName = stringMap.get(key) ?? key;
-                    user.matchingField = valueString.replace(
-                        this.getPreppedSearchTerm(),
-                        `<span class="font-weight-bold">${this.getSearchTerm()}</span>`
+
+                    // Safely prepare our matching results.
+                    const escapedValueString = valueString.replace(/</g, '&lt;');
+                    const escapedMatchingField = escapedValueString.replace(
+                        preppedSearchTerm.replace(/</g, '&lt;'),
+                        `<span class="font-weight-bold">${searchTerm.replace(/</g, '&lt;')}</span>`
                     );
-                    user.matchingField = `${user.matchingField} (${user.email})`;
+
+                    user.matchingField = `${escapedMatchingField} (${user.email})`;
                     user.link = this.selectOneLink(user.id);
                     break;
                 }
@@ -224,7 +232,7 @@ export default class UserSearch extends GradebookSearchClass {
     selectAllResultsLink() {
         return Url.relativeUrl('/grade/report/grader/index.php', {
             id: courseID,
-            searchvalue: this.getSearchTerm()
+            gpr_search: this.getSearchTerm()
         }, false);
     }
 
@@ -237,8 +245,8 @@ export default class UserSearch extends GradebookSearchClass {
     selectOneLink(userID) {
         return Url.relativeUrl('/grade/report/grader/index.php', {
             id: courseID,
-            searchvalue: this.getSearchTerm(),
-            userid: userID,
+            gpr_search: this.getSearchTerm(),
+            gpr_userid: userID,
             }, false);
     }
 
@@ -252,6 +260,7 @@ export default class UserSearch extends GradebookSearchClass {
         if (!this.profilestringmap) {
             const requiredStrings = [
                 'username',
+                'fullname',
                 'firstname',
                 'lastname',
                 'email',

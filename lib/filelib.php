@@ -2068,9 +2068,12 @@ function get_mimetype_description($obj, $capitalise=false) {
  */
 function file_get_typegroup($element, $groups) {
     static $cached = array();
+
+    // Turn groups into a list.
     if (!is_array($groups)) {
-        $groups = array($groups);
+        $groups = preg_split('/[\s,;:"\']+/', $groups, -1, PREG_SPLIT_NO_EMPTY);
     }
+
     if (!array_key_exists($element, $cached)) {
         $cached[$element] = array();
     }
@@ -3130,7 +3133,7 @@ class curl {
     public $rawresponse = array();
     /** @var array http header */
     public  $header   = array();
-    /** @var string cURL information */
+    /** @var array cURL information */
     public  $info;
     /** @var string error */
     public  $error;
@@ -4176,7 +4179,7 @@ class curl {
     /**
      * Get curl information
      *
-     * @return string
+     * @return array
      */
     public function get_info() {
         return $this->info;

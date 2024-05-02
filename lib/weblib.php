@@ -255,7 +255,6 @@ function get_local_referer($stripquery = true) {
  *     - and output the params as hidden fields to be output within a form
  *
  * @copyright 2007 jamiesensei
- * @link http://docs.moodle.org/dev/lib/weblib.php_moodle_url See short write up here
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package core
  */
@@ -619,11 +618,42 @@ class moodle_url {
         if ($querystring !== '') {
             $uri .= '?' . $querystring;
         }
-        if (!is_null($this->anchor)) {
-            $uri .= '#'.$this->anchor;
-        }
+
+        $uri .= $this->get_encoded_anchor();
 
         return $uri;
+    }
+
+    /**
+     * Encode the anchor according to RFC 3986.
+     *
+     * @return string The encoded anchor
+     */
+    public function get_encoded_anchor(): string {
+        if (is_null($this->anchor)) {
+            return '';
+        }
+
+        // RFC 3986 allows the following characters in a fragment without them being encoded:
+        // pct-encoded: "%" HEXDIG HEXDIG
+        // unreserved:  ALPHA / DIGIT / "-" / "." / "_" / "~" /
+        // sub-delims:  "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / ":" / "@"
+        // fragment:    "/" / "?"
+        //
+        // All other characters should be encoded.
+        // These should not be encoded in the fragment unless they were already encoded.
+
+        $allowed = 'a-zA-Z0-9\\-._~!$&\'()*+,;=:@\/?%';
+        $anchor = '#';
+        $anchor .= preg_replace_callback(
+            '/[^' . $allowed . ']/',
+            function ($matches) {
+                return rawurlencode($matches[0]);
+            },
+            $this->anchor
+        );
+
+        return $anchor;
     }
 
     /**
@@ -639,8 +669,8 @@ class moodle_url {
         $uri .= $this->host ? $this->host : '';
         $uri .= $this->port ? ':'.$this->port : '';
         $uri .= $this->path ? $this->path : '';
-        if ($includeanchor and !is_null($this->anchor)) {
-            $uri .= '#' . $this->anchor;
+        if ($includeanchor) {
+            $uri .= $this->get_encoded_anchor();
         }
 
         return $uri;
@@ -716,15 +746,8 @@ class moodle_url {
         if (is_null($anchor)) {
             // Remove.
             $this->anchor = null;
-        } else if ($anchor === '') {
-            // Special case, used as empty link.
-            $this->anchor = '';
-        } else if (preg_match('|[a-zA-Z\_\:][a-zA-Z0-9\_\-\.\:]*|', $anchor)) {
-            // Match the anchor against the NMTOKEN spec.
-            $this->anchor = $anchor;
         } else {
-            // Bad luck, no valid anchor found.
-            $this->anchor = null;
+            $this->anchor = $anchor;
         }
     }
 
@@ -1269,6 +1292,17 @@ function format_text($text, $format = FORMAT_MOODLE, $options = null, $courseidd
         return '';
     }
 
+    if ($options instanceof \core\context) {
+        // A common mistake has been to call this function with a context object.
+        // This has never been expected, nor supported.
+        debugging(
+            'The options argument should not be a context object directly. ' .
+                ' Please pass an array with a context key instead.',
+            DEBUG_DEVELOPER,
+        );
+        $options = ['context' => $options];
+    }
+
     // Detach object, we can not modify it.
     $options = (array)$options;
 
@@ -1515,12 +1549,35 @@ function format_string($string, $striplinks = true, $options = null) {
         $strcache = array();
     }
 
-    if (is_numeric($options)) {
+    // This method only expects either:
+    // - an array of options;
+    // - a stdClass of options to be cast to an array; or
+    // - an integer courseid.
+    if ($options === null) {
+        $options = [];
+    } else if (is_numeric($options)) {
         // Legacy courseid usage.
-        $options  = array('context' => context_course::instance($options));
+        $options  = ['context' => \core\context\course::instance($options)];
+    } else if ($options instanceof \core\context) {
+        // A common mistake has been to call this function with a context object.
+        // This has never been expected, or nor supported.
+        debugging(
+            'The options argument should not be a context object directly. ' .
+                ' Please pass an array with a context key instead.',
+            DEBUG_DEVELOPER,
+        );
+        $options = ['context' => $options];
+    } else if (is_array($options) || is_a($options, \stdClass::class)) {
+        // Re-cast to array to prevent modifications to the original object.
+        $options = (array) $options;
     } else {
-        // Detach object, we can not modify it.
-        $options = (array)$options;
+        // Something else was passed, so we'll just use an empty array.
+        // Attempt to cast to array since we always used to, but throw in some debugging.
+        debugging(sprintf(
+            'The options argument should be an Array, or stdclass. %s passed.',
+            gettype($options),
+        ), DEBUG_DEVELOPER);
+        $options = (array) $options;
     }
 
     if (empty($options['context'])) {
@@ -2295,11 +2352,19 @@ function highlightfast($needle, $haystack) {
  * @return string
  */
 function get_html_lang_attribute_value(string $langcode): string {
-    if (empty(trim($langcode))) {
-        // If the language code passed is an empty string, return 'unknown'.
-        return 'unknown';
+    $langcode = clean_param($langcode, PARAM_LANG);
+    if ($langcode === '') {
+        return 'en';
     }
-    return str_replace('_', '-', $langcode);
+
+    // Grab language ISO code from lang config. If it differs from English, then it's been specified and we can return it.
+    $langiso = (string) (new lang_string('iso6391', 'core_langconfig', null, $langcode));
+    if ($langiso !== 'en') {
+        return $langiso;
+    }
+
+    // Where we cannot determine the value from lang config, use the first two characters from the lang code.
+    return substr($langcode, 0, 2);
 }
 
 /**
@@ -2414,7 +2479,7 @@ function link_arrow_right($text, $url='', $accesshide=false, $addclass='', $addp
     if (!$url) {
         $arrowclass .= $addclass;
     }
-    $arrow = '<span class="'.$arrowclass.'">'.$OUTPUT->rarrow().'</span>';
+    $arrow = '<span class="'.$arrowclass.'" aria-hidden="true">'.$OUTPUT->rarrow().'</span>';
     $htmltext = '';
     if ($text) {
         $htmltext = '<span class="arrow_text">'.$text.'</span>&nbsp;';
@@ -2456,7 +2521,7 @@ function link_arrow_left($text, $url='', $accesshide=false, $addclass='', $addpa
     if (! $url) {
         $arrowclass .= $addclass;
     }
-    $arrow = '<span class="'.$arrowclass.'">'.$OUTPUT->larrow().'</span>';
+    $arrow = '<span class="'.$arrowclass.'" aria-hidden="true">'.$OUTPUT->larrow().'</span>';
     $htmltext = '';
     if ($text) {
         $htmltext = '&nbsp;<span class="arrow_text">'.$text.'</span>';
@@ -3208,7 +3273,6 @@ function print_maintenance_message() {
 
     $PAGE->set_pagetype('maintenance-message');
     $PAGE->set_pagelayout('maintenance');
-    $PAGE->set_title(strip_tags($SITE->fullname));
     $PAGE->set_heading($SITE->fullname);
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('sitemaintenance', 'admin'));

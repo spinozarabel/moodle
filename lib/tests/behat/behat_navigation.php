@@ -916,6 +916,63 @@ class behat_navigation extends behat_base {
     }
 
     /**
+     * Opens a new tab with given name on the same URL as current page and switches to it.
+     *
+     * @param string $name Tab name that can be used for switching later (no whitespace)
+     * @When /^I open a tab named "(?<name>[^"]*)" on the current page$/
+     */
+    public function i_open_a_tab_on_the_current_page(string $name): void {
+        $this->open_tab($name, 'location.href');
+    }
+
+    /**
+     * Opens a new tab with given name on specified page, and switches to it.
+     *
+     * @param string $name Tab name that can be used for switching later (no whitespace)
+     * @param string $page Page name
+     * @When /^I open a tab named "(?<name>[^"]*)" on the "(?<page>[^"]*)" page$/
+     */
+    public function i_open_a_tab_on_the_page(string $name, string $page): void {
+        if ($page === 'current') {
+            $jstarget = 'location.href';
+        } else {
+            $jstarget = '"' . addslashes_js($this->resolve_page_helper($page)->out(false)) . '"';
+        }
+        $this->open_tab($name, $jstarget);
+    }
+
+    /**
+     * Opens a new tab with given name (on specified page), and switches to it.
+     *
+     * @param string $name Tab name that can be used for switching later (no whitespace)
+     * @param string $identifier Page identifier
+     * @param string $page Page type
+     * @When /^I open a tab named "(?<name>[^"]*)" on the "(?<identifier>[^"]*)" "(?<page>[^"]*)" page$/
+     */
+    public function i_open_a_tab_on_the_page_instance(string $name, string $identifier, string $page): void {
+        $this->open_tab($name, '"' . addslashes_js(
+            $this->resolve_page_instance_helper($identifier, $page)->out(false)) . '"');
+    }
+
+    /**
+     * Opens a new tab at the given target URL.
+     *
+     * @param string $name Name for tab
+     * @param string $jstarget Target in JavaScript syntax, i.e. if a string, must be quoted
+     */
+    protected function open_tab(string $name, string $jstarget): void {
+        // Tab names aren't allowed spaces, and our JavaScript below doesn't do any escaping.
+        if (clean_param($name, PARAM_ALPHANUMEXT) !== $name) {
+            throw new Exception('Tab name may not contain whitespace or special characters: "' . $name . '"');
+        }
+
+        // Normally you can't open a tab unless in response to a user action, but presumably Behat
+        // is exempt from this restriction, because it works to just open it directly.
+        $this->execute_script('window.open(' . $jstarget . ', "' . $name . '");');
+        $this->execute('behat_general::switch_to_window', [$name]);
+    }
+
+    /**
      * Opens the course homepage. (Consider using 'I am on the "shortname" "Course" page' step instead.)
      *
      * @Given /^I am on "(?P<coursefullname_string>(?:[^"]|\\")*)" course homepage$/
@@ -1408,5 +1465,37 @@ class behat_navigation extends behat_base {
         if ($this->is_editing_on()) {
             throw new ExpectationException('The edit mode could not be turned off', $this->getSession());
         }
+    }
+
+    /**
+     * Close the block drawer if it is open.
+     *
+     * This is necessary as in Behat the block drawer is open at each page load (disregarding user's settings)
+     * As the block drawer is positioned at the front of some contextual dialogs on the grade report for example.
+     * @Given I close block drawer if open
+     * @return void
+     */
+    public function i_close_block_drawer_if_open() {
+        if ($this->running_javascript()) {
+            $xpath = "//button[contains(@data-action,'closedrawer')][contains(@data-placement,'left')]";
+            $node = $this->getSession()->getPage()->find('xpath', $xpath);
+            if ($node && $node->isVisible()) {
+                $ishidden = $node->getAttribute('aria-hidden-tab-index');
+                if (!$ishidden) {
+                    $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
+                }
+            }
+        }
+    }
+
+    /**
+     * I close the block drawer and keep it closed.
+     *
+     * @Given I keep block drawer closed
+     * @return void
+     */
+    public function i_keep_block_drawer_closed() {
+        set_user_preference('behat_keep_drawer_closed', 1);
+        $this->i_close_block_drawer_if_open();
     }
 }

@@ -169,6 +169,113 @@ class weblib_test extends advanced_testcase {
     }
 
     /**
+     * Test the format_string illegal options handling.
+     *
+     * @covers ::format_string
+     * @dataProvider format_string_illegal_options_provider
+     */
+    public function test_format_string_illegal_options(
+        string $input,
+        string $result,
+        mixed $options,
+        string $pattern,
+    ): void {
+        $this->assertEquals(
+            $result,
+            format_string($input, false, $options),
+        );
+
+        $messages = $this->getDebuggingMessages();
+        $this->assertdebuggingcalledcount(1);
+        $this->assertMatchesRegularExpression(
+            "/{$pattern}/",
+            $messages[0]->message,
+        );
+    }
+
+    /**
+     * Data provider for test_format_string_illegal_options.
+     * @return array
+     */
+    public static function format_string_illegal_options_provider(): array {
+        return [
+            [
+                'Example',
+                'Example',
+                \core\context\system::instance(),
+                preg_quote('The options argument should not be a context object directly.'),
+            ],
+            [
+                'Example',
+                'Example',
+                true,
+                preg_quote('The options argument should be an Array, or stdclass. boolean passed.'),
+            ],
+            [
+                'Example',
+                'Example',
+                false,
+                preg_quote('The options argument should be an Array, or stdclass. boolean passed.'),
+            ],
+        ];
+    }
+
+    /**
+     * Ensure that if format_string is called with a context as the third param, that a debugging notice is emitted.
+     *
+     * @covers ::format_string
+     */
+    public function test_format_string_context(): void {
+        global $CFG;
+
+        $this->resetAfterTest(true);
+
+        // Disable the formatstringstriptags option to ensure that the HTML tags are not stripped.
+        $CFG->stringfilters = 'multilang';
+
+        // Enable filters.
+        $CFG->filterall = true;
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \core\context\course::instance($course->id);
+
+        // Set up the multilang filter at the system context, but disable it at the course.
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        filter_set_local_state('multilang', $coursecontext->id, TEXTFILTER_OFF);
+
+        // Previously, if a context was passed, it was converted into an Array, and ignored.
+        // The PAGE context was used instead -- often this is the system context.
+        $input = 'I really <span lang="en" class="multilang">do not </span><span lang="de" class="multilang">do not </span>like this!';
+
+        $result = format_string(
+            $input,
+            true,
+            $coursecontext,
+        );
+
+        // We emit a debugging notice to alert that the context has been moved to the options.
+        $this->assertdebuggingcalledcount(1);
+
+        // Check the result was _not_ filtered.
+        $this->assertEquals(
+            // Tags are stripped out due to striptags.
+            "I really do not do not like this!",
+            $result,
+        );
+
+        // But it should be filtered if called with the system context.
+        $result = format_string(
+            $input,
+            true,
+            ['context' => \core\context\system::instance()],
+        );
+        $this->assertEquals(
+            'I really do not like this!',
+            $result,
+        );
+    }
+
+    /**
      * @covers ::format_text_email
      */
     public function test_format_text_email() {
@@ -1079,9 +1186,9 @@ EXPECTED;
         $url1 = "{$CFG->wwwroot}/draftfile.php/5/user/draft/99999999/test1.jpg";
         $url2 = "{$CFG->wwwroot}/draftfile.php/5/user/draft/99999998/test2.jpg";
 
-        $html = "<p>This is a test.</p><p><img src=\"{$url1}\" alt=\"\" role=\"presentation\"></p>
+        $html = "<p>This is a test.</p><p><img src=\"{$url1}\" alt=\"\"></p>
                 <br>Test content.<p></p><p><img src=\"{$url2}\" alt=\"\" width=\"2048\" height=\"1536\"
-                role=\"presentation\" class=\"img-fluid atto_image_button_text-bottom\"><br></p>";
+                class=\"img-fluid atto_image_button_text-bottom\"><br></p>";
         $draftareas = array(
             array(
                 'urlbase' => 'draftfile.php',
@@ -1163,9 +1270,10 @@ EXPECTED;
      */
     public function get_html_lang_attribute_value_provider() {
         return [
-            'Empty lang code' => ['    ', 'unknown'],
+            'Empty lang code' => ['    ', 'en'],
             'English' => ['en', 'en'],
-            'English, US' => ['en_us', 'en-us'],
+            'English, US' => ['en_us', 'en'],
+            'Unknown' => ['xx', 'en'],
         ];
     }
 

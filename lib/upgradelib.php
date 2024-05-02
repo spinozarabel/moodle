@@ -1287,7 +1287,9 @@ function external_update_descriptions($component) {
 
         if ($dbfunction->services != $functionservices) {
             // Now, we need to check if services were removed, in that case we need to remove the function from them.
-            $servicesremoved = array_diff(explode(",", $dbfunction->services), explode(",", $functionservices));
+            $oldservices = $dbfunction->services ? explode(',', $dbfunction->services) : [];
+            $newservices = $functionservices ? explode(',', $functionservices) : [];
+            $servicesremoved = array_diff($oldservices, $newservices);
             foreach ($servicesremoved as $removedshortname) {
                 if ($externalserviceid = $DB->get_field('external_services', 'id', array("shortname" => $removedshortname))) {
                     $DB->delete_records('external_services_functions', array('functionname' => $dbfunction->name,
@@ -1584,7 +1586,7 @@ function upgrade_started($preinstall=false) {
             $strupgrade  = get_string('upgradingversion', 'admin');
             $PAGE->set_pagelayout('maintenance');
             upgrade_init_javascript();
-            $PAGE->set_title($strupgrade.' - Moodle '.$CFG->target_release);
+            $PAGE->set_title($strupgrade . moodle_page::TITLE_SEPARATOR . 'Moodle ' . $CFG->target_release);
             $PAGE->set_heading($strupgrade);
             $PAGE->navbar->add($strupgrade);
             $PAGE->set_cacheable(false);
@@ -2550,6 +2552,26 @@ function check_igbinary322_version(environment_results $result) {
 }
 
 /**
+ * This function checks that the database prefix ($CFG->prefix) is <= 10
+ *
+ * @param environment_results $result
+ * @return environment_results|null updated results object, or null if the prefix check is passing ok.
+ */
+function check_db_prefix_length(environment_results $result) {
+    global $CFG;
+
+    $prefixlen = strlen($CFG->prefix) ?? 0;
+    if ($prefixlen > 10) {
+        $parameters = (object)['current' => $prefixlen, 'maximum' => 10];
+        $result->setFeedbackStr(['dbprefixtoolong', 'admin', $parameters]);
+        $result->setInfo('db prefix too long');
+        $result->setStatus(false);
+        return $result;
+    }
+    return null; // All, good. By returning null we hide the check.
+}
+
+/**
  * Assert the upgrade key is provided, if it is defined.
  *
  * The upgrade key can be defined in the main config.php as $CFG->upgradekey. If
@@ -2838,6 +2860,29 @@ function check_mod_assignment(environment_results $result): ?environment_results
             $result->setFeedbackStr('modassignmentsubpluginsexist');
             return $result;
         }
+    }
+
+    return null;
+}
+
+/**
+ * Check whether the Oracle database is currently being used and warn if so.
+ *
+ * The Oracle database support will be removed in a future version (4.5) as it is no longer supported by PHP.
+ *
+ * @param environment_results $result object to update, if relevant
+ * @return environment_results|null updated results or null if the current database is not Oracle.
+ *
+ * @see https://tracker.moodle.org/browse/MDL-80166 for further information.
+ */
+function check_oracle_usage(environment_results $result): ?environment_results {
+    global $CFG;
+
+    // Checking database type.
+    if ($CFG->dbtype === 'oci') {
+        $result->setInfo('oracle_database_usage');
+        $result->setFeedbackStr('oracledatabaseinuse');
+        return $result;
     }
 
     return null;

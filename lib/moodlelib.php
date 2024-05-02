@@ -1059,25 +1059,8 @@ function clean_param($param, $type) {
 
         case PARAM_HOST:
             // Allow FQDN or IPv4 dotted quad.
-            $param = preg_replace('/[^\.\d\w-]/', '', (string)$param );
-            // Match ipv4 dotted quad.
-            if (preg_match('/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/', $param, $match)) {
-                // Confirm values are ok.
-                if ( $match[0] > 255
-                     || $match[1] > 255
-                     || $match[3] > 255
-                     || $match[4] > 255 ) {
-                    // Hmmm, what kind of dotted quad is this?
-                    $param = '';
-                }
-            } else if ( preg_match('/^[\w\d\.-]+$/', $param) // Dots, hyphens, numbers.
-                       && !preg_match('/^[\.-]/',  $param) // No leading dots/hyphens.
-                       && !preg_match('/[\.-]$/',  $param) // No trailing dots/hyphens.
-                       ) {
-                // All is ok - $param is respected.
-            } else {
-                // All is not ok...
-                $param='';
+            if (!\core\ip_utils::is_domain_name($param) && !\core\ip_utils::is_ipv4_address($param)) {
+                $param = '';
             }
             return $param;
 
@@ -2184,7 +2167,7 @@ function get_user_preferences($name = null, $default = null, $user = null) {
  * @param int $minute The minute part to create timestamp of
  * @param int $second The second part to create timestamp of
  * @param int|float|string $timezone Timezone modifier, used to calculate GMT time offset.
- *             if 99 then default user's timezone is used {@link http://docs.moodle.org/dev/Time_API#Timezone}
+ *             if 99 then default user's timezone is used {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
  * @param bool $applydst Toggle Daylight Saving Time, default true, will be
  *             applied only if timezone is 99 or string.
  * @return int GMT timestamp
@@ -2310,7 +2293,7 @@ function format_time($totalsecs, $str = null) {
  *        get_string('strftime...', 'langconfig');
  * @param int|float|string $timezone by default, uses the user's time zone. if numeric and
  *        not 99 then daylight saving will not be added.
- *        {@link http://docs.moodle.org/dev/Time_API#Timezone}
+ *        {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
  * @param bool $fixday If true (default) then the leading zero from %d is removed.
  *        If false then the leading zero is maintained.
  * @param bool $fixhour If true (default) then the leading zero from %I is removed.
@@ -2332,7 +2315,7 @@ function userdate($date, $format = '', $timezone = 99, $fixday = true, $fixhour 
  *        get_string('strftime...', 'langconfig');
  * @param int|float|string $timezone by default, uses the user's time zone. if numeric and
  *        not 99 then daylight saving will not be added.
- *        {@link http://docs.moodle.org/dev/Time_API#Timezone}
+ *        {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
  * @param bool $fixday If true (default) then the leading zero from %d is removed.
  *        If false then the leading zero is maintained.
  * @param bool $fixhour If true (default) then the leading zero from %I is removed.
@@ -2495,7 +2478,7 @@ function usertimezone($timezone=99) {
  * @category time
  * @param float|int|string $tz timezone to calculate GMT time offset before
  *        calculating user timezone, 99 is default user timezone
- *        {@link http://docs.moodle.org/dev/Time_API#Timezone}
+ *        {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
  * @return float|string
  */
 function get_user_timezone($tz = 99) {
@@ -4619,12 +4602,26 @@ function complete_user_login($user, array $extrauserinfo = []) {
         $ismoodleapp = false;
         $useragent = \core_useragent::get_user_agent_string();
 
-        // Schedule adhoc task to sent a login notification to the user.
-        $task = new \core\task\send_login_notifications();
-        $task->set_userid($USER->id);
-        $task->set_custom_data(compact('ismoodleapp', 'useragent', 'loginip', 'logintime'));
-        $task->set_component('core');
-        \core\task\manager::queue_adhoc_task($task);
+        $sitepreferences = get_message_output_default_preferences();
+        // Check if new login notification is disabled at system level.
+        $newlogindisabled = $sitepreferences->moodle_newlogin_disable ?? 0;
+        // Check if message providers (web, email, mobile) are enabled at system level.
+        $msgproviderenabled = isset($sitepreferences->message_provider_moodle_newlogin_enabled);
+        // Get message providers enabled for a user.
+        $userpreferences = get_user_preferences('message_provider_moodle_newlogin_enabled');
+        // Check if notification processor plugins (web, email, mobile) are enabled at system level.
+        $msgprocessorsready = !empty(get_message_processors(true));
+        // If new login notification is enabled at system level then go for other conditions check.
+        $newloginenabled = $newlogindisabled ? 0 : ($userpreferences != 'none' && $msgproviderenabled);
+
+        if ($newloginenabled && $msgprocessorsready) {
+            // Schedule adhoc task to send a login notification to the user.
+            $task = new \core\task\send_login_notifications();
+            $task->set_userid($USER->id);
+            $task->set_custom_data(compact('ismoodleapp', 'useragent', 'loginip', 'logintime'));
+            $task->set_component('core');
+            \core\task\manager::queue_adhoc_task($task);
+        }
     }
 
     // Queue migrating the messaging data, if we need to.
@@ -4966,7 +4963,7 @@ function get_complete_user_data($field, $value, $mnethostid = null, $throwexcept
 function check_password_policy($password, &$errmsg, $user = null) {
     global $CFG;
 
-    if (!empty($CFG->passwordpolicy)) {
+    if (!empty($CFG->passwordpolicy) && !isguestuser($user)) {
         $errmsg = '';
         if (core_text::strlen($password) < $CFG->minpasswordlength) {
             $errmsg .= '<div>'. get_string('errorminpasswordlength', 'auth', $CFG->minpasswordlength) .'</div>';
@@ -10228,8 +10225,14 @@ function setup_lang_from_browser() {
         // Clean it properly for include.
         $lang = strtolower(clean_param($lang, PARAM_SAFEDIR));
         if (get_string_manager()->translation_exists($lang, false)) {
-            // Lang exists, set it in session.
-            $SESSION->lang = $lang;
+            // If the translation for this language exists then try to set it
+            // for the rest of the session, if this is a read only session then
+            // we can only set it temporarily in $CFG.
+            if (defined('READ_ONLY_SESSION') && !empty($CFG->enable_read_only_sessions)) {
+                $CFG->lang = $lang;
+            } else {
+                $SESSION->lang = $lang;
+            }
             // We have finished. Go out.
             break;
         }
@@ -10590,52 +10593,33 @@ function get_course_display_name_for_list($course) {
  * Safe analogue of unserialize() that can only parse arrays
  *
  * Arrays may contain only integers or strings as both keys and values. Nested arrays are allowed.
- * Note: If any string (key or value) has semicolon (;) as part of the string parsing will fail.
- * This is a simple method to substitute unnecessary unserialize() in code and not intended to cover all possible cases.
  *
  * @param string $expression
  * @return array|bool either parsed array or false if parsing was impossible.
  */
 function unserialize_array($expression) {
-    $subs = [];
-    // Find nested arrays, parse them and store in $subs , substitute with special string.
-    while (preg_match('/([\^;\}])(a:\d+:\{[^\{\}]*\})/', $expression, $matches) && strlen($matches[2]) < strlen($expression)) {
-        $key = '--SUB' . count($subs) . '--';
-        $subs[$key] = unserialize_array($matches[2]);
-        if ($subs[$key] === false) {
-            return false;
-        }
-        $expression = str_replace($matches[2], $key . ';', $expression);
-    }
 
     // Check the expression is an array.
-    if (!preg_match('/^a:(\d+):\{([^\}]*)\}$/', $expression, $matches1)) {
+    if (!preg_match('/^a:(\d+):/', $expression)) {
         return false;
     }
-    // Get the size and elements of an array (key;value;key;value;....).
-    $parts = explode(';', $matches1[2]);
-    $size = intval($matches1[1]);
-    if (count($parts) < $size * 2 + 1) {
-        return false;
-    }
-    // Analyze each part and make sure it is an integer or string or a substitute.
-    $value = [];
-    for ($i = 0; $i < $size * 2; $i++) {
-        if (preg_match('/^i:(\d+)$/', $parts[$i], $matches2)) {
-            $parts[$i] = (int)$matches2[1];
-        } else if (preg_match('/^s:(\d+):"(.*)"$/', $parts[$i], $matches3) && strlen($matches3[2]) == (int)$matches3[1]) {
-            $parts[$i] = $matches3[2];
-        } else if (preg_match('/^--SUB\d+--$/', $parts[$i])) {
-            $parts[$i] = $subs[$parts[$i]];
-        } else {
-            return false;
+
+    $values = (array) unserialize_object($expression);
+
+    // Callback that returns true if the given value is an unserialized object, executes recursively.
+    $invalidvaluecallback = static function($value) use (&$invalidvaluecallback): bool {
+        if (is_array($value)) {
+            return (bool) array_filter($value, $invalidvaluecallback);
         }
+        return ($value instanceof stdClass) || ($value instanceof __PHP_Incomplete_Class);
+    };
+
+    // Iterate over the result to ensure there are no stray objects.
+    if (array_filter($values, $invalidvaluecallback)) {
+        return false;
     }
-    // Combine keys and values.
-    for ($i = 0; $i < $size * 2; $i += 2) {
-        $value[$parts[$i]] = $parts[$i+1];
-    }
-    return $value;
+
+    return $values;
 }
 
 /**

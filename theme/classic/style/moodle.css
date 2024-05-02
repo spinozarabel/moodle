@@ -22875,6 +22875,22 @@ a.text-dark:hover, a.text-dark:focus {
   left: 0;
   right: auto;
 }
+.dir-rtl .popover.bs-popover-right, .dir-rtl .popover.bs-popover-auto[x-placement^=right] {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+.dir-rtl .popover.bs-popover-right .arrow, .dir-rtl .popover.bs-popover-auto[x-placement^=right] .arrow {
+  transform: rotate(180deg);
+  left: calc(-0.5rem - 1px);
+}
+.dir-rtl .popover.bs-popover-left, .dir-rtl .popover.bs-popover-auto[x-placement^=left] {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+.dir-rtl .popover.bs-popover-left .arrow, .dir-rtl .popover.bs-popover-auto[x-placement^=left] .arrow {
+  transform: rotate(180deg);
+  right: calc(-0.5rem - 1px);
+}
 
 /**
  * Moodle variables
@@ -24945,7 +24961,7 @@ a.disabled {
   text-decoration: none;
   cursor: default;
   font-style: italic;
-  color: #808080;
+  color: #6a737b;
 }
 
 body.lockscroll {
@@ -25221,6 +25237,10 @@ h3.sectionname .inplaceeditable.inplaceeditingon .editinstructions {
   position: absolute;
   left: 0.4rem;
   font-size: 0.7rem;
+}
+
+.dropdown-menu {
+  width: fit-content;
 }
 
 .competency-tree ul {
@@ -26055,6 +26075,7 @@ blockquote {
 .activityiconcontainer .activityicon,
 .activityiconcontainer .icon {
   margin: 0;
+  font-size: 24px;
   height: 24px;
   width: 24px;
 }
@@ -26929,6 +26950,11 @@ blockquote {
 #block-region-side-pre .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
   width: calc(100% - 0.5rem) !important;
 }
+@media (max-width: 575.98px) {
+  #block-region-side-pre .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
+    width: 100% !important;
+  }
+}
 
 .block_recentlyaccessedcourses .paging-bar-container {
   margin-top: -2.4rem;
@@ -27027,12 +27053,6 @@ aside[id^=block-region-side-] .block_recentlyaccesseditems .dashboard-card-deck 
   color: #6a737b;
 }
 
-@media (max-width: 767.98px) {
-  .block.card {
-    border-left: 0;
-    border-right: 0;
-  }
-}
 .block_social_activities li a.movehere,
 .block_site_main_menu li a.movehere {
   display: block;
@@ -27466,7 +27486,15 @@ aside[id^=block-region-side-] .block_recentlyaccesseditems .dashboard-card-deck 
   height: 0;
 }
 .path-course-view .block.block_calendar_month .maincalendar .calendarwrapper .arrow_text {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .path-course-view .block.block_calendar_month .footer .bottom .footer-link {
   display: block;
@@ -28986,6 +29014,9 @@ span.editinstructions .alert-link {
   padding: 2rem;
   width: 100%;
 }
+.course-section .overlay-preview {
+  z-index: 5;
+}
 
 .description .course-description-item {
   font-size: 0.875em;
@@ -29205,6 +29236,22 @@ span.editinstructions .alert-link {
     margin-left: 2rem;
   }
 }
+@media (max-width: 767.98px) {
+  .stickyfooter.bulkactions .form-check,
+  .stickyfooter.bulkactions .bulkaction-name,
+  .stickyfooter.bulkactions .bulkcount {
+    display: none;
+  }
+  .stickyfooter.bulkactions .actions button {
+    padding: 0 0.5rem;
+  }
+  .stickyfooter.bulkactions .bulkcancel {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
+
 /* Anchor link offset fix. This makes hash links scroll 60px down to account for the fixed header. */
 :target {
   scroll-margin-top: 60px;
@@ -29408,6 +29455,10 @@ body.drawer-ease {
 .drawer.drawer-bottom.show {
   bottom: 0;
 }
+.drawer.drawer-primary .drawertoggle {
+  margin-right: 16px;
+  margin-left: 5px;
+}
 
 @media (min-width: 992px) {
   .drawer {
@@ -29433,6 +29484,12 @@ body.drawer-ease {
   height: 50px;
   display: flex;
   align-items: center;
+}
+.drawerheader .sitename {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-right: 16px;
 }
 
 .drawer.scrolled .drawerheader {
@@ -29500,6 +29557,12 @@ body.drawer-ease {
     bottom: 0;
   }
 }
+@media (max-width: 991.98px) {
+  .drawer-md.drawer-primary .drawertoggle {
+    margin-right: 16px;
+    margin-left: 5px;
+  }
+}
 @media (max-width: 767.98px) {
   .drawer-sm {
     display: block;
@@ -29559,6 +29622,12 @@ body.drawer-ease {
   }
   .drawer-sm.drawer-bottom.show {
     bottom: 0;
+  }
+}
+@media (max-width: 767.98px) {
+  .drawer-sm.drawer-primary .drawertoggle {
+    margin-right: 16px;
+    margin-left: 5px;
   }
 }
 .drawercontent {
@@ -30899,14 +30968,10 @@ a.ygtvspacer:hover {
 .message-app .contact-status {
   position: absolute;
   left: 39px;
-  top: 39px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  top: 34px;
 }
-.message-app .contact-status.online {
-  border: 1px solid #fff;
-  background-color: #357a32;
+.message-app .contact-status.online .icon {
+  color: #357a32;
 }
 .message-app .message p {
   margin: 0;
@@ -31464,7 +31529,8 @@ body.path-question-type .form-group .col-form-label.sr-only:not(legend):not([for
   max-width: inherit;
 }
 
-.path-mod-quiz input[size] {
+.que input[size],
+.que textarea[cols] {
   width: auto;
   max-width: 100%;
 }
@@ -34996,11 +35062,11 @@ p.arrow_button {
 .path-grade-report-grader .gradeparent tr.userrow th.actions-menu-active {
   z-index: 3;
 }
-.path-grade-report-grader .gradeparent tr.lastrow {
+.path-grade-report-grader .gradeparent tr.lastrow:not(.userrow) {
   position: sticky;
   bottom: -1px;
 }
-.path-grade-report-grader .gradeparent tr.lastrow.pinned {
+.path-grade-report-grader .gradeparent tr.lastrow:not(.userrow).pinned {
   z-index: 4;
 }
 .path-grade-report-grader .gradeparent tr.lastrow td,
@@ -35236,33 +35302,6 @@ body:not(.jsenabled) .langmenu:hover > .dropdown-menu,
   z-index: inherit;
 }
 
-/* Force positioning of popover arrows.
- *
- * The Css prefixer used in Moodle does not support complex calc statements used
- * in Bootstrap 4 CSS. For example:
- * calc((0.5rem + 1px) * -1); is stripped out by lib/php-css-parser/Parser.php.
- * See MDL-61879. For now the arrow positions of popovers are fixed until this is resolved.
- */
-.bs-popover-right .arrow,
-.bs-popover-auto[x-placement^=right] .arrow {
-  left: -9px;
-}
-
-.bs-popover-left .arrow,
-.bs-popover-auto[x-placement^=left] .arrow {
-  right: -9px;
-}
-
-.bs-popover-top .arrow,
-.bs-popover-auto[x-placement^=top] .arrow {
-  bottom: -9px;
-}
-
-.bs-popover-bottom .arrow,
-.bs-popover-auto[x-placement^=bottom] .arrow {
-  top: -9px;
-}
-
 .custom-select {
   word-wrap: normal;
 }
@@ -35300,6 +35339,10 @@ body.behat-site.hasstickyfooter .stickyfooter,
 body.behat-site .stickyfooter {
   position: inherit;
   z-index: inherit;
+}
+body.behat-site.hasstickyfooter .stickyfooter .bulkcancel,
+body.behat-site .stickyfooter .bulkcancel {
+  position: inherit;
 }
 body.behat-site .dropdown-item {
   margin-top: 4px !important; /* stylelint-disable declaration-no-important */
@@ -35585,6 +35628,9 @@ body {
 .navbar-nav .popover-region .icon {
   font-weight: bolder;
 }
+.navbar-nav .popover-region .notification-image .icon {
+  font-weight: 400;
+}
 
 .navbar .popover-region.collapsed .popover-region-container {
   opacity: 0;
@@ -35684,9 +35730,9 @@ body {
   width: calc(100% - 24px);
 }
 .content-item-container.selected {
-  background-color: #4f94cd;
+  background-color: #3279b3;
   color: #fff;
-  border-color: #4f94cd;
+  border-color: #3279b3;
 }
 .content-item-container.selected .content-item-footer .timestamp {
   color: #fff;
@@ -35922,6 +35968,22 @@ span[data-flexitour=container][x-placement=right] div[data-role=arrow]:after, sp
   content: " ";
   border-left-width: 0;
   border-right-color: #fff;
+}
+.dir-rtl span[data-flexitour=container][x-placement^=right] {
+  margin-left: 1rem;
+}
+.dir-rtl span[data-flexitour=container][x-placement^=right] div[data-role=arrow] {
+  transform: rotate(180deg);
+  left: -1rem;
+  right: auto;
+}
+.dir-rtl span[data-flexitour=container][x-placement^=left] {
+  margin-right: 1rem;
+}
+.dir-rtl span[data-flexitour=container][x-placement^=left] div[data-role=arrow] {
+  transform: rotate(180deg);
+  left: auto;
+  right: -1rem;
 }
 
 [data-region=drawer] [data-flexitour=container] {
@@ -36835,6 +36897,16 @@ div.editor_atto_toolbar button .icon {
   margin-top: 0;
 }
 
+.navbar-bootswatch .navbar-brand {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.navbar-bootswatch .navbar-brand .sitename {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 :root {
   --navbar-height: 50px;
 }
@@ -37331,9 +37403,6 @@ div.editor_atto_toolbar button .icon {
 .courseindex .courseindex-item:hover.dimmed .courseindex-chevron, .courseindex .courseindex-item:focus.dimmed .courseindex-link,
 .courseindex .courseindex-item:focus.dimmed .courseindex-chevron {
   color: black;
-}
-.courseindex .courseindex-item:hover.draggable, .courseindex .courseindex-item:focus.draggable {
-  cursor: pointer;
 }
 .courseindex .courseindex-item.dragging {
   border: 1px solid #b8dce2;

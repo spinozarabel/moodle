@@ -60,13 +60,13 @@ defined('MOODLE_INTERNAL') || die();
  *     // Explanation of the update step, linking to issue in the Tracker if necessary
  *     upgrade_set_timeout(XX); // Optional for big tasks
  *     // Code to execute goes here, usually the XMLDB Editor will
- *     // help you here. See {@link http://docs.moodle.org/dev/XMLDB_editor}.
+ *     // help you here. See {@link https://moodledev.io/general/development/tools/xmldb}.
  *     upgrade_main_savepoint(true, XXXXXXXXXX.XX);
  * }
  *
  * All plugins within Moodle (modules, blocks, reports...) support the existence of
  * their own upgrade.php file, using the "Frankenstyle" component name as
- * defined at {@link http://docs.moodle.org/dev/Frankenstyle}, for example:
+ * defined at {@link https://moodledev.io/general/development/policies/codingstyle/frankenstyle}, for example:
  *     - {@link xmldb_page_upgrade($oldversion)}. (modules don't require the plugintype ("mod_") to be used.
  *     - {@link xmldb_auth_manual_upgrade($oldversion)}.
  *     - {@link xmldb_workshopform_accumulative_upgrade($oldversion)}.
@@ -78,8 +78,8 @@ defined('MOODLE_INTERNAL') || die();
  * about what can be used within it.
  *
  * For more information, take a look to the documentation available:
- *     - Data definition API: {@link http://docs.moodle.org/dev/Data_definition_API}
- *     - Upgrade API: {@link http://docs.moodle.org/dev/Upgrade_API}
+ *     - Data definition API: {@link https://moodledev.io/docs/apis/core/dml/ddl}
+ *     - Upgrade API: {@link https://moodledev.io/docs/guides/upgrade}
  *
  * @param int $oldversion
  * @return bool always true
@@ -3288,6 +3288,67 @@ privatefiles,moodle|/user/files.php';
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2023042401.09);
+    }
+
+    if ($oldversion < 2023042402.03) {
+
+        // The previous default configuration had a typo, check for its presence and correct if necessary.
+        $sensiblesettings = get_config('adminpresets', 'sensiblesettings');
+        if (strpos($sensiblesettings, 'smtppass@none') !== false) {
+            $newsensiblesettings = str_replace('smtppass@none', 'smtppass@@none', $sensiblesettings);
+            set_config('sensiblesettings', $newsensiblesettings, 'adminpresets');
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2023042402.03);
+    }
+
+    if ($oldversion < 2023042402.11) {
+        upgrade_core_licenses();
+        upgrade_main_savepoint(true, 2023042402.11);
+    }
+
+    if ($oldversion < 2023042402.14) {
+        // Delete datakey with datavalue -1.
+        $DB->delete_records('messageinbound_datakeys', ['datavalue' => '-1']);
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2023042402.14);
+    }
+
+    if ($oldversion < 2023042405.06) {
+        // If h5plib_v124 is no longer present, remove it.
+        if (!file_exists($CFG->dirroot . '/h5p/h5plib/v124/version.php')) {
+            // Clean config.
+            uninstall_plugin('h5plib', 'v124');
+        }
+
+        // If h5plib_v126 is present, set it as the default one.
+        if (file_exists($CFG->dirroot . '/h5p/h5plib/v126/version.php')) {
+            set_config('h5plibraryhandler', 'h5plib_v126');
+        }
+
+        upgrade_main_savepoint(true, 2023042405.06);
+    }
+
+    if ($oldversion < 2023042406.05) {
+
+        // Get all "select" custom field shortnames.
+        $fieldshortnames = $DB->get_fieldset_select('customfield_field', 'shortname', 'type = :type', ['type' => 'select']);
+
+        // Ensure any used in custom reports columns are not using integer type aggregation.
+        foreach ($fieldshortnames as $fieldshortname) {
+            $DB->execute("
+                UPDATE {reportbuilder_column}
+                   SET aggregation = NULL
+                 WHERE " . $DB->sql_like('uniqueidentifier', ':uniqueidentifier', false) . "
+                   AND aggregation IN ('avg', 'max', 'min', 'sum')
+            ", [
+                'uniqueidentifier' => '%' . $DB->sql_like_escape(":customfield_{$fieldshortname}"),
+            ]);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2023042406.05);
     }
 
     return true;

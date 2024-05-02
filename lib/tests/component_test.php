@@ -23,10 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  * @covers \core_component
- * @runTestsInSeparateProcesses
  */
-class component_test extends advanced_testcase {
-
+final class component_test extends advanced_testcase {
     /**
      * To be changed if number of subsystems increases/decreases,
      * this is defined here to annoy devs that try to add more without any thinking,
@@ -475,8 +473,10 @@ class component_test extends advanced_testcase {
         $this->assertEquals(array(), array_keys($list));
     }
 
-    public function test_get_component_classes_in_namespace() {
-
+    /**
+     * Tests for get_component_classes_in_namespace.
+     */
+    public function test_get_component_classes_in_namespace(): void {
         // Unexisting.
         $this->assertCount(0, core_component::get_component_classes_in_namespace('core_unexistingcomponent', 'something'));
         $this->assertCount(0, core_component::get_component_classes_in_namespace('auth_cas', 'something'));
@@ -486,40 +486,125 @@ class component_test extends advanced_testcase {
         $this->assertCount(0, core_component::get_component_classes_in_namespace('core_user', 'course'));
         $this->assertCount(0, core_component::get_component_classes_in_namespace('mod_forum', 'output\\emaildigest'));
         $this->assertCount(0, core_component::get_component_classes_in_namespace('mod_forum', '\\output\\emaildigest'));
-        $this->assertCount(2, core_component::get_component_classes_in_namespace('mod_forum', 'output\\email'));
-        $this->assertCount(2, core_component::get_component_classes_in_namespace('mod_forum', '\\output\\email'));
-        $this->assertCount(2, core_component::get_component_classes_in_namespace('mod_forum', 'output\\email\\'));
-        $this->assertCount(2, core_component::get_component_classes_in_namespace('mod_forum', '\\output\\email\\'));
-
-        // Prefix with backslash if it doesn\'t come prefixed.
-        $this->assertCount(1, core_component::get_component_classes_in_namespace('auth_cas', 'task'));
-        $this->assertCount(1, core_component::get_component_classes_in_namespace('auth_cas', '\\task'));
-
-        // Core as a component works, the function can normalise the component name.
-        $this->assertCount(7, core_component::get_component_classes_in_namespace('core', 'update'));
-        $this->assertCount(7, core_component::get_component_classes_in_namespace('', 'update'));
-        $this->assertCount(7, core_component::get_component_classes_in_namespace('moodle', 'update'));
-
-        // Multiple levels.
-        $this->assertCount(5, core_component::get_component_classes_in_namespace('core_user', '\\output\\myprofile\\'));
-        $this->assertCount(5, core_component::get_component_classes_in_namespace('core_user', 'output\\myprofile\\'));
-        $this->assertCount(5, core_component::get_component_classes_in_namespace('core_user', '\\output\\myprofile'));
-        $this->assertCount(5, core_component::get_component_classes_in_namespace('core_user', 'output\\myprofile'));
-
-        // Without namespace it returns classes/ classes.
-        $this->assertCount(5, core_component::get_component_classes_in_namespace('tool_mobile', ''));
-        $this->assertCount(2, core_component::get_component_classes_in_namespace('tool_filetypes'));
-
-        // When no component is specified, classes are returned for the namespace in all components.
-        // (We don't assert exact amounts here as the count of `output` classes will change depending on plugins installed).
-        $this->assertGreaterThan(
-            count(\core_component::get_component_classes_in_namespace('core', 'output')),
-            count(\core_component::get_component_classes_in_namespace(null, 'output')));
 
         // Without either a component or namespace it returns an empty array.
         $this->assertEmpty(\core_component::get_component_classes_in_namespace());
         $this->assertEmpty(\core_component::get_component_classes_in_namespace(null));
         $this->assertEmpty(\core_component::get_component_classes_in_namespace(null, ''));
+    }
+
+    /**
+     * Test that the get_component_classes_in_namespace() function returns classes in the correct namespace.
+     *
+     * @dataProvider get_component_classes_in_namespace_provider
+     * @param array $methodargs
+     * @param string $expectedclassnameformat
+     */
+    public function test_get_component_classes_in_namespace_provider(
+        array $methodargs,
+        string $expectedclassnameformat,
+    ): void {
+        $classlist = core_component::get_component_classes_in_namespace(...$methodargs);
+        $this->assertGreaterThan(0, count($classlist));
+
+        foreach (array_keys($classlist) as $classname) {
+            $this->assertStringMatchesFormat($expectedclassnameformat, $classname);
+        }
+    }
+
+    /**
+     * Data provider for get_component_classes_in_namespace tests.
+     *
+     * @return array
+     */
+    public static function get_component_classes_in_namespace_provider(): array {
+        return [
+            // Matches the last namespace level name not partials.
+            [
+                ['mod_forum', 'output\\email'],
+                'mod_forum\output\email\%s',
+            ],
+            [
+                ['mod_forum', '\\output\\email'],
+                'mod_forum\output\email\%s',
+            ],
+            [
+                ['mod_forum', 'output\\email\\'],
+                'mod_forum\output\email\%s',
+            ],
+            [
+                ['mod_forum', '\\output\\email\\'],
+                'mod_forum\output\email\%s',
+            ],
+            // Prefix with backslash if it doesn\'t come prefixed.
+            [
+                ['auth_cas', 'task'],
+                'auth_cas\task\%s',
+            ],
+            [
+                ['auth_cas', '\\task'],
+                'auth_cas\task\%s',
+            ],
+
+            // Core as a component works, the function can normalise the component name.
+            [
+                ['core', 'update'],
+                'core\update\%s',
+            ],
+            [
+                ['', 'update'],
+                'core\update\%s',
+            ],
+            [
+                ['moodle', 'update'],
+                'core\update\%s',
+            ],
+
+            // Multiple levels.
+            [
+                ['core_user', '\\output\\myprofile\\'],
+                'core_user\output\myprofile\%s',
+            ],
+            [
+                ['core_user', 'output\\myprofile\\'],
+                'core_user\output\myprofile\%s',
+            ],
+            [
+                ['core_user', '\\output\\myprofile'],
+                'core_user\output\myprofile\%s',
+            ],
+            [
+                ['core_user', 'output\\myprofile'],
+                'core_user\output\myprofile\%s',
+            ],
+
+            // Without namespace it returns classes/ classes.
+            [
+                ['tool_mobile', ''],
+                'tool_mobile\%s',
+            ],
+            [
+                ['tool_filetypes'],
+                'tool_filetypes\%s',
+            ],
+
+            // Multiple levels.
+            [
+                ['core_user', '\\output\\myprofile\\'],
+                'core_user\output\myprofile\%s',
+            ],
+
+            // When no component is specified, classes are returned for the namespace in all components.
+            // (We don't assert exact amounts here as the count of `output` classes will change depending on plugins installed).
+            [
+                ['core', 'output'],
+                'core\%s',
+            ],
+            [
+                [null, 'output'],
+                '%s',
+            ],
+        ];
     }
 
     /**
@@ -602,6 +687,7 @@ class component_test extends advanced_testcase {
      * @param array $psr4 The PSR-4 namespaces to be used in the test.
      * @param string $classname The name of the class to attempt to load.
      * @param string $includedfiles The file expected to be loaded.
+     * @runInSeparateProcess
      */
     public function test_classloader($psr0, $psr4, $classname, $includedfiles) {
         $psr0namespaces = new ReflectionProperty('core_component', 'psr0namespaces');
@@ -631,7 +717,8 @@ class component_test extends advanced_testcase {
         // This is not in the spec, but may come up in some libraries using both namespaces and PEAR-style class names.
         // If problems arise we can remove this test, but will need to add a warning.
         // Normalise to forward slash for testing purposes.
-        $directory = str_replace('\\', '/', $CFG->dirroot) . "/lib/tests/fixtures/component/";
+        $dirroot = str_replace('\\', '/', $CFG->dirroot);
+        $directory = "{$dirroot}/lib/tests/fixtures/component/";
 
         $psr0 = [
           'psr0'      => 'lib/tests/fixtures/component/psr0',
@@ -702,6 +789,28 @@ class component_test extends advanced_testcase {
               'classname' => 'overlap_subnamespace_example2',
               'file' => "{$directory}overlap/subnamespace/example2.php",
           ],
+            'PSR-4 namespaces can come from multiple sources - first source' => [
+                'psr0' => $psr0,
+                'psr4' => [
+                    'Psr\\Http\\Message' => [
+                        'lib/psr/http-message/src',
+                        'lib/psr/http-factory/src',
+                    ],
+                ],
+                'classname' => 'Psr\Http\Message\ServerRequestInterface',
+                'includedfiles' => "{$dirroot}/lib/psr/http-message/src/ServerRequestInterface.php",
+            ],
+            'PSR-4 namespaces can come from multiple sources - second source' => [
+                'psr0' => [],
+                'psr4' => [
+                    'Psr\\Http\\Message' => [
+                        'lib/psr/http-message/src',
+                        'lib/psr/http-factory/src',
+                    ],
+                ],
+                'classname' => 'Psr\Http\Message\ServerRequestFactoryInterface',
+                'includedfiles' => "{$dirroot}/lib/psr/http-factory/src/ServerRequestFactoryInterface.php",
+            ],
         ];
     }
 
@@ -713,6 +822,7 @@ class component_test extends advanced_testcase {
      * @param array $psr4 The PSR-4 namespaces to be used in the test.
      * @param string $classname The name of the class to attempt to load.
      * @param string|bool $file The expected file corresponding to the class or false for nonexistant.
+     * @runInSeparateProcess
      */
     public function test_psr_classloader($psr0, $psr4, $classname, $file) {
         $psr0namespaces = new ReflectionProperty('core_component', 'psr0namespaces');
@@ -764,7 +874,7 @@ class component_test extends advanced_testcase {
               'separators' => ['\\'],
               'result' => $CFG->dirroot . "/test/src/Multiple/Namespaces.php",
           ],
-          'Getting a file with multiple namespaces' => [
+          'Getting a file with multiple namespaces (non-existent)' => [
               'classname' => 'Nonexistant\\Namespace\\Test',
               'prefix' => "Test",
               'path' => 'test/src',
