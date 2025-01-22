@@ -29,7 +29,7 @@ require_once($CFG->libdir.'/completionlib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \completion_info
  */
-class completionlib_test extends advanced_testcase {
+final class completionlib_test extends advanced_testcase {
     protected $course;
     protected $user;
     protected $module1;
@@ -354,7 +354,7 @@ class completionlib_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function internal_get_state_provider() {
+    public static function internal_get_state_provider(): array {
         return [
             'View required, but not viewed yet' => [
                 COMPLETION_VIEW_REQUIRED, 1, '', COMPLETION_INCOMPLETE
@@ -415,7 +415,7 @@ class completionlib_test extends advanced_testcase {
      *
      * @return array
      */
-    public function internal_get_state_with_grade_criteria_provider() {
+    public static function internal_get_state_with_grade_criteria_provider(): array {
         return [
             "Passing grade enabled and achieve. State should be COMPLETION_COMPLETE_PASS" => [
                 [
@@ -737,7 +737,7 @@ class completionlib_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_data_provider() {
+    public static function get_data_provider(): array {
         return [
             'No completion record' => [
                 false, true, false, COMPLETION_INCOMPLETE
@@ -1647,7 +1647,7 @@ class completionlib_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_grade_completion_provider() {
+    public static function get_grade_completion_provider(): array {
         return [
             'Grade not required' => [false, false, null, null, null],
             'Grade required, but has no grade yet' => [true, false, null, null, COMPLETION_INCOMPLETE],
@@ -2085,6 +2085,155 @@ class completionlib_test extends advanced_testcase {
             'coursemoduleid IN (SELECT id FROM {course_modules} WHERE course=:course)',
             ['course' => $this->course->id]
         ));
+    }
+
+    /**
+     * Data provider for test_count_modules_completed().
+     *
+     * @return array[]
+     */
+    public static function count_modules_completed_provider(): array {
+        return [
+            'Multiple users with two different modules but only one completed' => [
+                'existinguser' => true,
+                'totalusers' => 3,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_COMPLETE,
+                    ],
+                    [
+                        'name' => 'choice',
+                        'completionstate' => COMPLETION_INCOMPLETE,
+                    ],
+                ],
+                'expectedcount' => 1,
+            ],
+            'Multiple users with three different modules but only two completed' => [
+                'existinguser' => true,
+                'totalusers' => 4,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_COMPLETE,
+                    ],
+                    [
+                        'name' => 'choice',
+                        'completionstate' => COMPLETION_INCOMPLETE,
+                    ],
+                    [
+                        'name' => 'workshop',
+                        'completionstate' => COMPLETION_COMPLETE,
+                    ],
+                ],
+                'expectedcount' => 2,
+            ],
+            'Multiple users with one completion each' => [
+                'existinguser' => true,
+                'totalusers' => 5,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_COMPLETE,
+                    ],
+                ],
+                'expectedcount' => 1,
+            ],
+            'One user with one completion' => [
+                'existinguser' => true,
+                'totalusers' => 1,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_COMPLETE,
+                    ],
+                ],
+                'expectedcount' => 1,
+            ],
+            'Multiple users without completion' => [
+                'existinguser' => true,
+                'totalusers' => 3,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_INCOMPLETE,
+                    ],
+                ],
+                'expectedcount' => 0,
+            ],
+            'Non-existing user' => [
+                'existinguser' => false,
+                'totalusers' => 1,
+                'modules' => [
+                    [
+                        'name' => 'assign',
+                        'completionstate' => COMPLETION_INCOMPLETE,
+                    ],
+                ],
+                'expectedcount' => 0,
+            ],
+        ];
+    }
+
+    /**
+     * Test for count_modules_completed().
+     *
+     * @dataProvider count_modules_completed_provider
+     * @param bool $existinguser Whether the given user exists or not.
+     * @param int $totalusers The amount of users to check completion.
+     * @param array $modules The course modules with its completion state.
+     * @param int $expectedcount Expected total of modules completed.
+     * @covers ::count_modules_completed
+     */
+    public function test_count_modules_completed(bool $existinguser, int $totalusers, array $modules,
+        int $expectedcount): void {
+        global $DB;
+
+        $this->setAdminUser();
+        $this->setup_data();
+
+        // Loop through the provided modules array and set the id key based on the generated module.
+        $modules = array_map(function(array $module): array {
+            $generator = $this->getDataGenerator()->get_plugin_generator('mod_' . $module['name']);
+            $modinstance = $generator->create_instance([
+                'course' => $this->course->id,
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionsubmit' => true,
+            ]);
+            $cminstance = get_coursemodule_from_instance($module['name'], $modinstance->id);
+
+            $module['id'] = $cminstance->id;
+            return $module;
+        }, $modules);
+
+        $completion = new completion_info($this->course);
+
+        if ($existinguser) {
+            // Create users, assign them to a course and define the completion record.
+            for ($i = 0; $i < $totalusers; $i++) {
+                $user = $this->getDataGenerator()->create_user();
+                $this->getDataGenerator()->enrol_user($user->id, $this->course->id);
+                $users[] = $user;
+
+                foreach ($modules as $module) {
+                    $cmcompletionrecords[] = (object)[
+                        'coursemoduleid' => $module['id'],
+                        'userid' => $user->id,
+                        'completionstate' => $module['completionstate'],
+                        'timemodified' => 0,
+                    ];
+                }
+            }
+
+            $DB->insert_records('course_modules_completion', $cmcompletionrecords);
+
+            foreach ($users as $user) {
+                $this->assertEquals($expectedcount, $completion->count_modules_completed($user->id));
+            }
+        } else {
+            $nonexistinguserid = 123;
+            $this->assertEquals($expectedcount, $completion->count_modules_completed($nonexistinguserid));
+        }
     }
 }
 

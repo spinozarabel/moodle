@@ -1995,7 +1995,7 @@ class core_renderer extends renderer_base {
         foreach ($items as $key => $string) {
             $item = html_writer::start_tag('li', array('class' => 'r' . $row));
             if (!empty($icons[$key])) { //test if the content has an assigned icon
-                $item .= html_writer::tag('div', $icons[$key], array('class' => 'icon column c0'));
+                $item .= html_writer::tag('div', $icons[$key], ['class' => 'column c0 icon-size-3']);
             }
             $item .= html_writer::tag('div', $string, array('class' => 'column c1'));
             $item .= html_writer::end_tag('li');
@@ -4941,11 +4941,12 @@ EOD;
      *               will be appended to the end, JS will toggle the rest of the tags
      * @param context $pagecontext specify if needed to overwrite the current page context for the view tag link
      * @param bool $accesshidelabel if true, the label should have class="accesshide" added.
+     * @param bool $displaylink Indicates whether the tag should be displayed as a link.
      * @return string
      */
     public function tag_list($tags, $label = null, $classes = '', $limit = 10,
-            $pagecontext = null, $accesshidelabel = false) {
-        $list = new \core_tag\output\taglist($tags, $label, $classes, $limit, $pagecontext, $accesshidelabel);
+            $pagecontext = null, $accesshidelabel = false, $displaylink = true) {
+        $list = new \core_tag\output\taglist($tags, $label, $classes, $limit, $pagecontext, $accesshidelabel, $displaylink);
         return $this->render_from_template('core_tag/taglist', $list->export_for_template($this));
     }
 
