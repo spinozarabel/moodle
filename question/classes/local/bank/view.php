@@ -244,7 +244,8 @@ class view {
                 $params['filter']['category'] = [
                     'jointype' => category_condition::JOINTYPE_DEFAULT,
                     'values' => [$category->id],
-                    'filteroptions' => ['includesubcategories' => false],
+                    'filteroptions' => ['includesubcategories' =>
+                        get_user_preferences('qbank_managecategories_includesubcategories_filter_default', false)],
                 ];
             }
             $params['filter']['hidden'] = [
@@ -321,7 +322,7 @@ class view {
      */
     protected function init_bulk_actions(): void {
         foreach ($this->plugins as $componentname => $plugin) {
-            $bulkactions = $plugin->get_bulk_actions();
+            $bulkactions = $plugin->get_bulk_actions($this);
             if (!is_array($bulkactions)) {
                 debugging("The method {$componentname}::get_bulk_actions() must return an " .
                     "array of bulk actions instead of a single bulk action. " .
