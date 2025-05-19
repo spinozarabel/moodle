@@ -1,6 +1,14 @@
 # core (subsystem) Upgrade notes
 
-## 4.5.3+
+## 4.5.4+
+
+### Added
+
+- Added a new optional param to adhoc_task_failed and scheduled_task_failed to allow skipping log finalisation when called from a separate task.
+
+  For more information see [MDL-84442](https://tracker.moodle.org/browse/MDL-84442)
+
+## 4.5.4
 
 ### Added
 
@@ -15,6 +23,9 @@
   3. Ensure that the email catcher is set up using the step `Given an email catcher server is configured`.
 
   For more information see [MDL-75971](https://tracker.moodle.org/browse/MDL-75971)
+- The public method `get_slashargument` has been added to the `url` class.
+
+  For more information see [MDL-84351](https://tracker.moodle.org/browse/MDL-84351)
 - A new method, `core_text::trim_ctrl_chars()`, has been introduced to clean control characters from text. This ensures cleaner input handling and prevents issues caused by invisible or non-printable characters
 
   For more information see [MDL-84907](https://tracker.moodle.org/browse/MDL-84907)
